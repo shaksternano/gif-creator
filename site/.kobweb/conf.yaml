@@ -1,0 +1,14 @@
+site:
+    title: "Gif Creator"
+
+server:
+    files:
+        dev:
+            contentRoot: "build/processedResources/js/main/public"
+            script: "build/kotlin-webpack/js/developmentExecutable/gifcreator.js"
+            api: "build/libs/gifcreator.jar"
+        prod:
+            script: "build/kotlin-webpack/js/productionExecutable/gifcreator.js"
+            siteRoot: ".kobweb/site"
+
+    port: 8080
