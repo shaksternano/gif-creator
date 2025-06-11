@@ -24,6 +24,8 @@ kotlin {
             implementation(libs.kobweb.core)
             implementation(libs.kobweb.silk)
             implementation(libs.silk.icons.fa)
+            implementation(project(":worker"))
+            implementation(project(":processor"))
         }
     }
 }
