@@ -2,6 +2,7 @@ package com.shakster.gifcreator.worker
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 sealed class GifWorkerOutput {
 
     @Serializable
