@@ -72,8 +72,8 @@ class WorkerGifEncoder(
             throw createException(throwable)
         }
 
-        val image = transferables.getInt32Array("image")
-            ?: throw IllegalStateException("Image data is missing")
+        val image = transferables.getInt32Array("argb")
+            ?: throw IllegalStateException("Image argb is missing")
 
         val written = baseEncoder.writeFrame(
             image.asIntArray(),
