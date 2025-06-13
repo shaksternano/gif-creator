@@ -11,7 +11,6 @@ import com.varabyte.kobweb.worker.Transferables
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 class WorkerGifEncoder(
     private val sink: Sink,
@@ -79,7 +78,7 @@ class WorkerGifEncoder(
             image.asIntArray(),
             input.width,
             input.height,
-            input.durationMilliseconds.milliseconds,
+            input.duration,
             quantizeAndWriteFrame = { optimizedImage, originalImage, durationCentiseconds, disposalMethod, optimizedPreviousFrame ->
                 quantizeAndWriteFrame(
                     optimizedImage,

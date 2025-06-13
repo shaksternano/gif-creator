@@ -3,6 +3,7 @@ package com.shakster.gifcreator.worker
 import com.shakster.gifcreator.shared.ColorDistanceCalculatorSettings
 import com.shakster.gifcreator.shared.ColorQuantizerSettings
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
 @Serializable
 sealed class GifWorkerInput {
@@ -25,7 +26,7 @@ sealed class GifWorkerInput {
     data class Frame(
         val width: Int,
         val height: Int,
-        val durationMilliseconds: Long,
+        val duration: Duration,
     ) : GifWorkerInput()
 
     @Serializable
