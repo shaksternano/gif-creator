@@ -1,6 +1,9 @@
 package com.shakster.gifcreator.worker
 
-import com.shakster.gifcreator.processor.*
+import com.shakster.gifcreator.processor.GifProcessorInput
+import com.shakster.gifcreator.processor.GifProcessorOutput
+import com.shakster.gifcreator.processor.dimensions
+import com.shakster.gifcreator.processor.info
 import com.shakster.gifcreator.util.*
 import com.shakster.gifkt.SuspendClosable
 import com.shakster.gifkt.internal.*
@@ -46,14 +49,14 @@ class WorkerGifEncoder(
 
     private var throwable: Throwable? = null
 
-    private val quantizeExecutor: AsyncExecutor<Pair<QuantizeInput, Transferables>, Pair<GifProcessorOutput, Transferables>> =
+    private val quantizeExecutor: AsyncExecutor<Pair<GifProcessorInput.Quantize, Transferables>, Pair<GifProcessorOutput, Transferables>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
             onOutput = ::writeOrOptimizeGifImage,
         )
 
-    private val encodeExecutor: AsyncExecutor<Pair<EncodeInput, Transferables>, Pair<GifProcessorOutput, Transferables>> =
+    private val encodeExecutor: AsyncExecutor<Pair<GifProcessorInput.Encode, Transferables>, Pair<GifProcessorOutput, Transferables>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
@@ -63,7 +66,7 @@ class WorkerGifEncoder(
     private var framesWritten: Int = 0
     private var writtenDuration: Duration = Duration.ZERO
 
-    suspend fun writeFrame(input: GifFrame, transferables: Transferables) {
+    suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
         val throwable = throwable
         if (throwable != null) {
             throw createException(throwable)
@@ -102,7 +105,7 @@ class WorkerGifEncoder(
         optimizedPreviousFrame: Boolean,
     ) {
         quantizeExecutor.submit(
-            QuantizeInput(
+            GifProcessorInput.Quantize(
                 baseEncoder.maxColors,
                 colorQuantizerSettings,
                 baseEncoder.optimizeQuantizedTransparency,
@@ -128,7 +131,7 @@ class WorkerGifEncoder(
         }
 
         val (output, transferables) = result.getOrThrow()
-        if (output !is QuantizeOutput) {
+        if (output !is GifProcessorOutput.Quantize) {
             throw createWrongOutputTypeException(output)
         }
         val imageColorIndices = transferables.getByteArray("imageColorIndices")
@@ -171,7 +174,7 @@ class WorkerGifEncoder(
         disposalMethod: DisposalMethod,
     ) {
         encodeExecutor.submit(
-            EncodeInput(
+            GifProcessorInput.Encode(
                 imageData.info,
                 durationCentiseconds,
                 disposalMethod,
@@ -192,7 +195,7 @@ class WorkerGifEncoder(
         }
 
         val (output, transferables) = result.getOrThrow()
-        if (output !is EncodeOutput) {
+        if (output !is GifProcessorOutput.Encode) {
             throw createWrongOutputTypeException(output)
         }
         val bytes = transferables.getByteArray("bytes")

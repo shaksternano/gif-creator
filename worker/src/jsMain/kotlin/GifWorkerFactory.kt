@@ -46,19 +46,19 @@ private class GifWorkerStrategy(
                 val input = inputMessage.input
                 var transferables: Transferables = Transferables.Empty
                 when (input) {
-                    is GifEncoderInit -> initEncoder(input)
-                    is GifFrame -> writeFrame(input, inputMessage.transferables)
-                    is GifEncoderClose -> transferables = closeEncoder()
-                    is WorkerShutdown -> shutdown()
+                    is GifWorkerInput.EncoderInit -> initEncoder(input)
+                    is GifWorkerInput.Frame -> writeFrame(input, inputMessage.transferables)
+                    is GifWorkerInput.EncoderClose -> transferables = closeEncoder()
+                    is GifWorkerInput.Shutdown -> shutdown()
                 }
-                postOutput(OkOutput, transferables)
+                postOutput(GifWorkerOutput.Ok, transferables)
             } catch (t: Throwable) {
-                postOutput(ErrorOutput(t.message ?: "An error occurred during processing"))
+                postOutput(GifWorkerOutput.Error(t.message ?: "An error occurred during processing"))
             }
         }
     }
 
-    private fun initEncoder(input: GifEncoderInit) {
+    private fun initEncoder(input: GifWorkerInput.EncoderInit) {
         val buffer = Buffer()
         this.buffer = buffer
         encoder = WorkerGifEncoder(
@@ -77,7 +77,7 @@ private class GifWorkerStrategy(
             workerPool,
         ) { framesWritten, writtenDuration ->
             postOutput(
-                EncodedFrameOutput(
+                GifWorkerOutput.EncodedFrame(
                     framesWritten,
                     writtenDuration.inWholeMilliseconds,
                 ),
@@ -85,7 +85,7 @@ private class GifWorkerStrategy(
         }
     }
 
-    private suspend fun writeFrame(input: GifFrame, transferables: Transferables) {
+    private suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
         getEncoder().writeFrame(input, transferables)
     }
 

@@ -31,12 +31,12 @@ private class GifProcessorWorkerStrategy(
     override fun onInput(inputMessage: InputMessage<GifProcessorInput>) {
         val input = inputMessage.input
         when (input) {
-            is QuantizeInput -> quantizeImage(input, inputMessage.transferables)
-            is EncodeInput -> encodeGifImage(input, inputMessage.transferables)
+            is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.transferables)
+            is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.transferables)
         }
     }
 
-    private fun quantizeImage(input: QuantizeInput, transferables: Transferables) {
+    private fun quantizeImage(input: GifProcessorInput.Quantize, transferables: Transferables) {
         val optimizedArgb = transferables.getIntArray("optimizedImage") ?: error("Missing optimized image data")
         val originalArgb = transferables.getIntArray("originalImage") ?: error("Missing original image data")
         val image = Image(
@@ -51,7 +51,7 @@ private class GifProcessorWorkerStrategy(
             input.optimizeQuantizedTransparency,
         )
         postOutput(
-            QuantizeOutput(
+            GifProcessorOutput.Quantize(
                 output.info,
                 input.originalImage,
                 input.durationCentiseconds,
@@ -66,7 +66,7 @@ private class GifProcessorWorkerStrategy(
         )
     }
 
-    private fun encodeGifImage(input: EncodeInput, transferables: Transferables) {
+    private fun encodeGifImage(input: GifProcessorInput.Encode, transferables: Transferables) {
         val imageColorIndices = transferables.getByteArray("imageColorIndices")
             ?: error("Missing image color indices data")
         val colorTable = transferables.getByteArray("colorTable")
@@ -78,7 +78,7 @@ private class GifProcessorWorkerStrategy(
             input.disposalMethod,
         )
         postOutput(
-            EncodeOutput(input.durationCentiseconds),
+            GifProcessorOutput.Encode(input.durationCentiseconds),
             Transferables {
                 add("bytes", buffer.readByteArray())
             }
