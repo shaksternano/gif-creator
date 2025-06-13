@@ -1,7 +1,7 @@
 package com.shakster.gifcreator.worker
 
-import com.shakster.gifcreator.util.ColorDistanceCalculatorSettings
-import com.shakster.gifcreator.util.ColorQuantizerSettings
+import com.shakster.gifcreator.shared.ColorDistanceCalculatorSettings
+import com.shakster.gifcreator.shared.ColorQuantizerSettings
 import kotlinx.serialization.Serializable
 
 @Serializable

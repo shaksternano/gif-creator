@@ -4,7 +4,7 @@ import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.dimensions
 import com.shakster.gifcreator.processor.info
-import com.shakster.gifcreator.util.*
+import com.shakster.gifcreator.shared.*
 import com.shakster.gifkt.SuspendClosable
 import com.shakster.gifkt.internal.*
 import com.varabyte.kobweb.worker.Transferables

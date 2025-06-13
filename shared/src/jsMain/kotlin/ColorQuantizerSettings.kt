@@ -1,4 +1,4 @@
-package com.shakster.gifcreator.util
+package com.shakster.gifcreator.shared
 
 import com.shakster.gifkt.ColorQuantizer
 import com.shakster.gifkt.NeuQuantizer

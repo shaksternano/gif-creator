@@ -1,4 +1,4 @@
-package com.shakster.gifcreator.util
+package com.shakster.gifcreator.shared
 
 import com.shakster.gifkt.CieLabDistanceCalculator
 import com.shakster.gifkt.ColorDistanceCalculator

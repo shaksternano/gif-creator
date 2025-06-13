@@ -3,7 +3,7 @@ package com.shakster.gifcreator.worker
 import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
-import com.shakster.gifcreator.util.add
+import com.shakster.gifcreator.shared.add
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*

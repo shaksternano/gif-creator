@@ -16,7 +16,7 @@ kotlin {
             implementation(libs.kobwebx.serialization.kotlinx)
             implementation(libs.gifkt)
             implementation(project(":processor"))
-            implementation(project(":util"))
+            implementation(project(":shared"))
         }
     }
 }

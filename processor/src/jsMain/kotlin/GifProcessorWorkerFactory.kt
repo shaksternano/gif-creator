@@ -1,8 +1,8 @@
 package com.shakster.gifcreator.processor
 
-import com.shakster.gifcreator.util.add
-import com.shakster.gifcreator.util.getByteArray
-import com.shakster.gifcreator.util.getIntArray
+import com.shakster.gifcreator.shared.add
+import com.shakster.gifcreator.shared.getByteArray
+import com.shakster.gifcreator.shared.getIntArray
 import com.shakster.gifkt.internal.Image
 import com.shakster.gifkt.internal.getImageData
 import com.shakster.gifkt.internal.writeGifImage

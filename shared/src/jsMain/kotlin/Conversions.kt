@@ -1,4 +1,4 @@
-package com.shakster.gifcreator.util
+package com.shakster.gifcreator.shared
 
 import com.varabyte.kobweb.worker.Transferables
 import org.khronos.webgl.Int32Array

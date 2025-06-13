@@ -39,4 +39,4 @@ gradle.settingsEvaluated {
 include(":site")
 include(":worker")
 include(":processor")
-include(":util")
+include(":shared")
