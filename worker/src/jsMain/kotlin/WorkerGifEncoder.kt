@@ -30,7 +30,7 @@ class WorkerGifEncoder(
     private val onFrameWritten: suspend (
         framesWritten: Int,
         writtenDuration: Duration,
-    ) -> Unit,
+    ) -> Unit = { _, _ -> },
 ) : SuspendClosable {
 
     private val baseEncoder: BaseGifEncoder = BaseGifEncoder(
