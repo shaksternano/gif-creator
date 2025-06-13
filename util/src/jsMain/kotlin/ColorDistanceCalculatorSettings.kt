@@ -10,7 +10,8 @@ sealed class ColorDistanceCalculatorSettings {
     abstract fun createColorDistanceCalculator(): ColorDistanceCalculator
 
     @Serializable
-    object CieLab : ColorDistanceCalculatorSettings() {
+    data object CieLab : ColorDistanceCalculatorSettings() {
+
         override fun createColorDistanceCalculator(): ColorDistanceCalculator {
             return CieLabDistanceCalculator
         }

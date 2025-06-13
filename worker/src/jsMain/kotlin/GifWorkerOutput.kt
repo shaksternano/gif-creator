@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 sealed class GifWorkerOutput {
 
     @Serializable
-    object Ok : GifWorkerOutput()
+    data object Ok : GifWorkerOutput()
 
     @Serializable
     data class Error(
