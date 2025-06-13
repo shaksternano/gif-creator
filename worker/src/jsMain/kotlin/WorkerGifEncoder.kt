@@ -49,14 +49,14 @@ class WorkerGifEncoder(
 
     private var throwable: Throwable? = null
 
-    private val quantizeExecutor: AsyncExecutor<Pair<GifProcessorInput.Quantize, Transferables>, Pair<GifProcessorOutput, Transferables>> =
+    private val quantizeExecutor: AsyncExecutor<Pair<GifProcessorInput.Quantize, Transferables>, WorkerResult<GifProcessorOutput>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
             onOutput = ::writeOrOptimizeGifImage,
         )
 
-    private val encodeExecutor: AsyncExecutor<Pair<GifProcessorInput.Encode, Transferables>, Pair<GifProcessorOutput, Transferables>> =
+    private val encodeExecutor: AsyncExecutor<Pair<GifProcessorInput.Encode, Transferables>, WorkerResult<GifProcessorOutput>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
@@ -121,7 +121,7 @@ class WorkerGifEncoder(
         )
     }
 
-    private suspend fun writeOrOptimizeGifImage(result: Result<Pair<GifProcessorOutput, Transferables>>) {
+    private suspend fun writeOrOptimizeGifImage(result: Result<WorkerResult<GifProcessorOutput>>) {
         val error = result.exceptionOrNull()
         if (error != null) {
             if (throwable == null) {
@@ -185,7 +185,7 @@ class WorkerGifEncoder(
         )
     }
 
-    private suspend fun transferToSink(result: Result<Pair<GifProcessorOutput, Transferables>>) {
+    private suspend fun transferToSink(result: Result<WorkerResult<GifProcessorOutput>>) {
         val error = result.exceptionOrNull()
         if (error != null) {
             if (throwable == null) {
@@ -206,7 +206,7 @@ class WorkerGifEncoder(
 
     private suspend fun submitToWorkerPool(
         input: Pair<GifProcessorInput, Transferables>,
-    ): Pair<GifProcessorOutput, Transferables> {
+    ): WorkerResult<GifProcessorOutput> {
         return workerPool.submit(input.first, input.second)
     }
 
