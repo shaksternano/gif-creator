@@ -28,19 +28,20 @@ class WorkerPool<I, O>(
         workers.forEach {
             availableWorkers.send(it)
         }
-        for ((input, inputTransferables, continuation) in inputs) {
+        for ((input, transferables, continuation) in inputs) {
             val worker = availableWorkers.receive()
-            val output = worker.submit(input, inputTransferables)
+            val result = worker.submit(input, transferables)
             availableWorkers.send(worker)
-            continuation.resume(output)
+            continuation.resume(result)
         }
     }
 
-    suspend fun submit(input: I, transferables: Transferables): WorkerResult<O> {
-        return suspendCoroutine { continuation ->
-            coroutineScope.launch {
-                inputs.send(Input(input, transferables, continuation))
-            }
+    suspend fun submit(
+        input: I,
+        transferables: Transferables = Transferables.Empty,
+    ): WorkerResult<O> = suspendCoroutine { continuation ->
+        coroutineScope.launch {
+            inputs.send(Input(input, transferables, continuation))
         }
     }
 
