@@ -7,7 +7,6 @@ import com.varabyte.kobweb.worker.Worker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.launch
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
@@ -20,7 +19,7 @@ class WorkerPool<I, O>(
     createWorker: () -> Worker<I, O>,
 ) {
 
-    private val inputs: Channel<Input<I, O>> = Channel(UNLIMITED)
+    private val inputs: Channel<Input<I, O>> = Channel(Channel.UNLIMITED)
     private val workers: List<Worker<I, O>> = List(size) { createWorker() }
     private val availableWorkers: Channel<Worker<I, O>> = Channel(size)
 
