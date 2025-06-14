@@ -8,6 +8,11 @@ import com.shakster.gifcreator.shared.*
 import com.shakster.gifkt.SuspendClosable
 import com.shakster.gifkt.internal.*
 import com.varabyte.kobweb.worker.Transferables
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import kotlinx.io.Sink
 import kotlin.time.Duration
@@ -62,8 +67,25 @@ class WorkerGifEncoder(
             onOutput = ::transferToSink,
         )
 
-    private var framesWritten: Int = 0
-    private var writtenDuration: Duration = Duration.ZERO
+    private val writtenFrameNotifications: Channel<Duration> = Channel(capacity = Channel.UNLIMITED)
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private val writtenFrameListener: Job = GlobalScope.launch {
+        var framesWritten = 0
+        var writtenDuration = Duration.ZERO
+        for (duration in writtenFrameNotifications) {
+            framesWritten++
+            writtenDuration += duration
+            try {
+                onFrameWritten(framesWritten, writtenDuration)
+            } catch (t: Throwable) {
+                if (throwable == null) {
+                    throwable = Exception("Error running onFrameWritten callback", t)
+                }
+                break
+            }
+        }
+    }
 
     suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
         val throwable = throwable
@@ -92,7 +114,7 @@ class WorkerGifEncoder(
 
         // Account for frames that have been merged due to similarity.
         if (!written) {
-            encodedFrame(Duration.ZERO)
+            writtenFrameNotifications.send(Duration.ZERO)
         }
     }
 
@@ -203,7 +225,7 @@ class WorkerGifEncoder(
             ?: throw IllegalStateException("Byte data is missing")
         sink.write(bytes)
         try {
-            encodedFrame(output.durationCentiseconds.centiseconds)
+            writtenFrameNotifications.send(output.durationCentiseconds.centiseconds)
         } catch (t: Throwable) {
             if (throwable == null) {
                 throwable = t
@@ -215,12 +237,6 @@ class WorkerGifEncoder(
         input: Pair<GifProcessorInput, Transferables>,
     ): WorkerResult<GifProcessorOutput> {
         return workerPool.submit(input.first, input.second)
-    }
-
-    private suspend fun encodedFrame(duration: Duration) {
-        framesWritten++
-        writtenDuration += duration
-        onFrameWritten(framesWritten, writtenDuration)
     }
 
     private fun createException(cause: Throwable): IOException {
@@ -252,6 +268,8 @@ class WorkerGifEncoder(
                     encodeExecutor.close()
                 },
             )
+            writtenFrameNotifications.close()
+            writtenFrameListener.join()
         } catch (t: Throwable) {
             closeThrowable = t
             throw t
