@@ -42,19 +42,20 @@ private class GifWorkerStrategy(
     override fun onInput(inputMessage: InputMessage<GifWorkerInput>) {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
-            try {
+            var transferables: Transferables = Transferables.Empty
+            val output = try {
                 val input = inputMessage.input
-                var transferables: Transferables = Transferables.Empty
                 when (input) {
                     is GifWorkerInput.EncoderInit -> initEncoder(input)
                     is GifWorkerInput.Frame -> writeFrame(input, inputMessage.transferables)
                     is GifWorkerInput.EncoderClose -> transferables = closeEncoder()
                     is GifWorkerInput.Shutdown -> shutdown()
                 }
-                postOutput(GifWorkerOutput.Ok, transferables)
+                GifWorkerOutput.Ok
             } catch (t: Throwable) {
-                postOutput(GifWorkerOutput.Error(t.message ?: "An error occurred during processing"))
+                GifWorkerOutput.Error(t.message ?: "An error occurred during processing")
             }
+            postOutput(output, transferables)
         }
     }
 
