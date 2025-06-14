@@ -75,14 +75,7 @@ private class GifWorkerStrategy(
             input.minimumFrameDurationCentiseconds,
             hardwareConcurrency,
             workerPool,
-        ) { framesWritten, writtenDuration ->
-            postOutput(
-                GifWorkerOutput.EncodedFrame(
-                    framesWritten,
-                    writtenDuration.inWholeMilliseconds,
-                ),
-            )
-        }
+        )
     }
 
     private suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
