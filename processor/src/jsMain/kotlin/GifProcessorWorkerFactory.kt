@@ -38,7 +38,7 @@ private class GifProcessorWorkerStrategy(
 
     private fun quantizeImage(input: GifProcessorInput.Quantize, transferables: Transferables) {
         val optimizedArgb = transferables.getIntArray("optimizedImage") ?: error("Missing optimized image data")
-        val originalArgb = transferables.getIntArray("originalImage") ?: error("Missing original image data")
+        val originalArgb = transferables.getIntArray("originalImage") ?: optimizedArgb
         val image = Image(
             optimizedArgb,
             input.optimizedImage.width,

@@ -115,7 +115,9 @@ class WorkerGifEncoder(
                 optimizedPreviousFrame,
             ) to Transferables {
                 add("optimizedImage", optimizedImage.argb)
-                add("originalImage", originalImage.argb)
+                if (optimizedImage.argb !== originalImage.argb) {
+                    add("originalImage", originalImage.argb)
+                }
             },
         )
     }
