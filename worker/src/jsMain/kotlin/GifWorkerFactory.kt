@@ -4,6 +4,7 @@ import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
 import com.shakster.gifcreator.shared.add
+import com.shakster.gifcreator.shared.asIntArray
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*
@@ -96,7 +97,14 @@ private class GifWorkerStrategy(
     }
 
     private suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
-        getEncoder().writeFrame(input, transferables)
+        val image = transferables.getInt32Array("argb")
+            ?: throw IllegalStateException("Image argb is missing")
+        getEncoder().writeFrame(
+            image.asIntArray(),
+            input.width,
+            input.height,
+            input.duration,
+        )
     }
 
     private suspend fun closeEncoder(): Transferables {

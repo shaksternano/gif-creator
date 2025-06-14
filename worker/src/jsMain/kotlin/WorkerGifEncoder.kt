@@ -87,20 +87,22 @@ class WorkerGifEncoder(
         }
     }
 
-    suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
+    suspend fun writeFrame(
+        image: IntArray,
+        width: Int,
+        height: Int,
+        duration: Duration,
+    ) {
         val throwable = throwable
         if (throwable != null) {
             throw createException(throwable)
         }
 
-        val image = transferables.getInt32Array("argb")
-            ?: throw IllegalStateException("Image argb is missing")
-
         val written = baseEncoder.writeFrame(
-            image.asIntArray(),
-            input.width,
-            input.height,
-            input.duration,
+            image,
+            width,
+            height,
+            duration,
             quantizeAndWriteFrame = { optimizedImage, originalImage, durationCentiseconds, disposalMethod, optimizedPreviousFrame ->
                 quantizeAndWriteFrame(
                     optimizedImage,
