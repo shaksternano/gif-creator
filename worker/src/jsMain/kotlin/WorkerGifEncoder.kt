@@ -202,7 +202,13 @@ class WorkerGifEncoder(
         val bytes = transferables.getByteArray("bytes")
             ?: throw IllegalStateException("Byte data is missing")
         sink.write(bytes)
-        encodedFrame(output.durationCentiseconds.centiseconds)
+        try {
+            encodedFrame(output.durationCentiseconds.centiseconds)
+        } catch (t: Throwable) {
+            if (throwable == null) {
+                throwable = t
+            }
+        }
     }
 
     private suspend fun submitToWorkerPool(
