@@ -3,6 +3,7 @@ package com.shakster.gifcreator.shared
 import com.varabyte.kobweb.worker.Transferables
 import com.varabyte.kobweb.worker.Worker
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 data class WorkerResult<O>(
@@ -17,5 +18,17 @@ suspend fun <I, O> Worker<I, O>.submit(
     onOutput = { output ->
         continuation.resume(WorkerResult(output, this.transferables))
     }
-    postInput(input, transferables)
+    try {
+        postInput(input, transferables)
+    } catch (t: Throwable) {
+        continuation.resumeWithException(
+            Exception(
+                "Failed to post message to worker." +
+                    "\n\nReason: $t" +
+                    "\n\nInput: $input" +
+                    "\n\nTransferables: ${JSON.stringify(transferables.toJson())}",
+                t,
+            ),
+        )
+    }
 }

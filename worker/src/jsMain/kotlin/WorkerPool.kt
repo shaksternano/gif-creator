@@ -8,10 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.*
 
 class WorkerPool<I, O>(
     size: Int,
@@ -29,9 +26,14 @@ class WorkerPool<I, O>(
         }
         for ((input, transferables, continuation) in inputs) {
             val worker = availableWorkers.receive()
-            val result = worker.submit(input, transferables)
-            availableWorkers.send(worker)
-            continuation.resume(result)
+            try {
+                val result = worker.submit(input, transferables)
+                continuation.resume(result)
+            } catch (t: Throwable) {
+                continuation.resumeWithException(t)
+            } finally {
+                availableWorkers.send(worker)
+            }
         }
     }
 
