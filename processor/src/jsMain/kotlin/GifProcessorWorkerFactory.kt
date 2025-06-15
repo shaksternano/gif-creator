@@ -1,6 +1,6 @@
 package com.shakster.gifcreator.processor
 
-import com.shakster.gifcreator.shared.WorkerResult
+import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.add
 import com.shakster.gifcreator.shared.getByteArray
 import com.shakster.gifcreator.shared.getIntArray
@@ -37,7 +37,7 @@ private class GifProcessorWorkerStrategy(
                 is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.transferables)
             }
         } catch (t: Throwable) {
-            WorkerResult(
+            WorkerMessage(
                 GifProcessorOutput.Error(t.message ?: "An error occurred during processing"),
                 Transferables.Empty,
             )
@@ -48,7 +48,7 @@ private class GifProcessorWorkerStrategy(
     private fun quantizeImage(
         input: GifProcessorInput.Quantize,
         transferables: Transferables,
-    ): WorkerResult<GifProcessorOutput> {
+    ): WorkerMessage<GifProcessorOutput> {
         val optimizedArgb = transferables.getIntArray("optimizedImage") ?: error("Missing optimized image data")
         val originalArgb = transferables.getIntArray("originalImage") ?: optimizedArgb
         val image = Image(
@@ -62,7 +62,7 @@ private class GifProcessorWorkerStrategy(
             input.colorQuantizerSettings.createQuantizer(),
             input.optimizeQuantizedTransparency,
         )
-        return WorkerResult(
+        return WorkerMessage(
             GifProcessorOutput.Quantize(
                 output.info,
                 input.originalImage,
@@ -81,7 +81,7 @@ private class GifProcessorWorkerStrategy(
     private fun encodeGifImage(
         input: GifProcessorInput.Encode,
         transferables: Transferables,
-    ): WorkerResult<GifProcessorOutput> {
+    ): WorkerMessage<GifProcessorOutput> {
         val imageColorIndices = transferables.getByteArray("imageColorIndices")
             ?: error("Missing image color indices data")
         val colorTable = transferables.getByteArray("colorTable")
@@ -92,7 +92,7 @@ private class GifProcessorWorkerStrategy(
             input.durationCentiseconds,
             input.disposalMethod,
         )
-        return WorkerResult(
+        return WorkerMessage(
             GifProcessorOutput.Encode(input.durationCentiseconds),
             Transferables {
                 add("bytes", buffer.readByteArray())

@@ -6,15 +6,15 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-data class WorkerResult<O>(
-    val output: O,
+data class WorkerMessage<out T>(
+    val content: T,
     val transferables: Transferables,
 )
 
 suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
     input: I,
     transferables: Transferables = Transferables.Empty,
-): WorkerResult<O> = suspendCoroutine { continuation ->
+): WorkerMessage<O> = suspendCoroutine { continuation ->
     onOutput = { output ->
         if (output.isError) {
             var exceptionMessage = "Worker returned an error."
@@ -25,7 +25,7 @@ suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
                 "\n\nTransferables: ${JSON.stringify(transferables.toJson())}"
             continuation.resumeWithException(Exception(exceptionMessage))
         } else {
-            continuation.resume(WorkerResult(output, this.transferables))
+            continuation.resume(WorkerMessage(output, this.transferables))
         }
     }
     try {

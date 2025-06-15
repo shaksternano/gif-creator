@@ -53,14 +53,14 @@ class WorkerGifEncoder(
 
     private var throwable: Throwable? = null
 
-    private val quantizeExecutor: AsyncExecutor<Pair<GifProcessorInput.Quantize, Transferables>, WorkerResult<GifProcessorOutput>> =
+    private val quantizeExecutor: AsyncExecutor<WorkerMessage<GifProcessorInput.Quantize>, WorkerMessage<GifProcessorOutput>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
             onOutput = ::writeOrOptimizeGifImage,
         )
 
-    private val encodeExecutor: AsyncExecutor<Pair<GifProcessorInput.Encode, Transferables>, WorkerResult<GifProcessorOutput>> =
+    private val encodeExecutor: AsyncExecutor<WorkerMessage<GifProcessorInput.Encode>, WorkerMessage<GifProcessorOutput>> =
         AsyncExecutor(
             maxConcurrency,
             task = ::submitToWorkerPool,
@@ -128,25 +128,28 @@ class WorkerGifEncoder(
         optimizedPreviousFrame: Boolean,
     ) {
         quantizeExecutor.submit(
-            GifProcessorInput.Quantize(
-                baseEncoder.maxColors,
-                colorQuantizerSettings,
-                baseEncoder.optimizeQuantizedTransparency,
-                optimizedImage.dimensions,
-                originalImage.dimensions,
-                durationCentiseconds,
-                disposalMethod,
-                optimizedPreviousFrame,
-            ) to Transferables {
-                add("optimizedImage", optimizedImage.argb)
-                if (optimizedImage.argb !== originalImage.argb) {
-                    add("originalImage", originalImage.argb)
-                }
-            },
+            WorkerMessage(
+                GifProcessorInput.Quantize(
+                    baseEncoder.maxColors,
+                    colorQuantizerSettings,
+                    baseEncoder.optimizeQuantizedTransparency,
+                    optimizedImage.dimensions,
+                    originalImage.dimensions,
+                    durationCentiseconds,
+                    disposalMethod,
+                    optimizedPreviousFrame,
+                ),
+                Transferables {
+                    add("optimizedImage", optimizedImage.argb)
+                    if (optimizedImage.argb !== originalImage.argb) {
+                        add("originalImage", originalImage.argb)
+                    }
+                },
+            ),
         )
     }
 
-    private suspend fun writeOrOptimizeGifImage(result: Result<WorkerResult<GifProcessorOutput>>) {
+    private suspend fun writeOrOptimizeGifImage(result: Result<WorkerMessage<GifProcessorOutput>>) {
         val error = result.exceptionOrNull()
         if (error != null) {
             if (throwable == null) {
@@ -199,18 +202,21 @@ class WorkerGifEncoder(
         disposalMethod: DisposalMethod,
     ) {
         encodeExecutor.submit(
-            GifProcessorInput.Encode(
-                imageData.info,
-                durationCentiseconds,
-                disposalMethod,
-            ) to Transferables {
-                add("imageColorIndices", imageData.imageColorIndices)
-                add("colorTable", imageData.colorTable)
-            },
+            WorkerMessage(
+                GifProcessorInput.Encode(
+                    imageData.info,
+                    durationCentiseconds,
+                    disposalMethod,
+                ),
+                Transferables {
+                    add("imageColorIndices", imageData.imageColorIndices)
+                    add("colorTable", imageData.colorTable)
+                },
+            ),
         )
     }
 
-    private suspend fun transferToSink(result: Result<WorkerResult<GifProcessorOutput>>) {
+    private suspend fun transferToSink(result: Result<WorkerMessage<GifProcessorOutput>>) {
         val error = result.exceptionOrNull()
         if (error != null) {
             if (throwable == null) {
@@ -236,9 +242,9 @@ class WorkerGifEncoder(
     }
 
     private suspend fun submitToWorkerPool(
-        input: Pair<GifProcessorInput, Transferables>,
-    ): WorkerResult<GifProcessorOutput> {
-        return workerPool.submit(input.first, input.second)
+        message: WorkerMessage<GifProcessorInput>,
+    ): WorkerMessage<GifProcessorOutput> {
+        return workerPool.submit(message.content, message.transferables)
     }
 
     private fun createException(cause: Throwable): IOException {

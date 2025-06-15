@@ -1,7 +1,7 @@
 package com.shakster.gifcreator.worker
 
+import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.WorkerOutput
-import com.shakster.gifcreator.shared.WorkerResult
 import com.shakster.gifcreator.shared.submit
 import com.varabyte.kobweb.worker.Transferables
 import com.varabyte.kobweb.worker.Worker
@@ -41,7 +41,7 @@ class WorkerPool<I, O : WorkerOutput>(
     suspend fun submit(
         input: I,
         transferables: Transferables = Transferables.Empty,
-    ): WorkerResult<O> = suspendCoroutine { continuation ->
+    ): WorkerMessage<O> = suspendCoroutine { continuation ->
         coroutineScope.launch {
             inputs.send(Input(input, transferables, continuation))
         }
@@ -58,6 +58,6 @@ class WorkerPool<I, O : WorkerOutput>(
     private data class Input<I, O>(
         val data: I,
         val transferables: Transferables,
-        val continuation: Continuation<WorkerResult<O>>
+        val continuation: Continuation<WorkerMessage<O>>
     )
 }
