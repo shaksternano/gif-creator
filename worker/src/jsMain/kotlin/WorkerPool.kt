@@ -1,5 +1,6 @@
 package com.shakster.gifcreator.worker
 
+import com.shakster.gifcreator.shared.WorkerOutput
 import com.shakster.gifcreator.shared.WorkerResult
 import com.shakster.gifcreator.shared.submit
 import com.varabyte.kobweb.worker.Transferables
@@ -10,7 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlin.coroutines.*
 
-class WorkerPool<I, O>(
+class WorkerPool<I, O : WorkerOutput>(
     size: Int,
     private val coroutineScope: CoroutineScope = CoroutineScope(EmptyCoroutineContext),
     createWorker: () -> Worker<I, O>,

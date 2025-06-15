@@ -1,15 +1,18 @@
 package com.shakster.gifcreator.worker
 
+import com.shakster.gifcreator.shared.WorkerOutput
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class GifWorkerOutput {
+sealed class GifWorkerOutput : WorkerOutput {
 
     @Serializable
     data object Ok : GifWorkerOutput()
 
     @Serializable
     data class Error(
-        val message: String,
-    ) : GifWorkerOutput()
+        override val message: String,
+    ) : GifWorkerOutput() {
+        override val isError: Boolean = true
+    }
 }
