@@ -9,6 +9,9 @@ import kotlin.time.Duration
 sealed class GifWorkerInput {
 
     @Serializable
+    data object MessagePort : GifWorkerInput()
+
+    @Serializable
     data class EncoderInit(
         val transparencyColorTolerance: Double,
         val quantizedTransparencyColorTolerance: Double,

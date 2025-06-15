@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
+import org.w3c.dom.MessagePort
 import kotlin.time.Duration
 
 internal class GifWorkerFactory : WorkerFactory<GifWorkerInput, GifWorkerOutput> {
@@ -38,6 +39,7 @@ private class GifWorkerStrategy(
         createWorker = ::GifProcessorWorker,
     )
 
+    private var messagePort: MessagePort? = null
     private var buffer: Buffer? = null
     private var encoder: WorkerGifEncoder? = null
 
@@ -49,7 +51,8 @@ private class GifWorkerStrategy(
             val output = try {
                 val input = inputMessage.input
                 when (input) {
-                    is GifWorkerInput.EncoderInit -> initEncoder(input, inputTransferables)
+                    is GifWorkerInput.MessagePort -> setMessagePort(inputTransferables)
+                    is GifWorkerInput.EncoderInit -> initEncoder(input)
                     is GifWorkerInput.Frame -> writeFrame(input, inputTransferables)
                     is GifWorkerInput.EncoderClose -> outputTransferables = closeEncoder()
                     is GifWorkerInput.Shutdown -> shutdown()
@@ -62,20 +65,21 @@ private class GifWorkerStrategy(
         }
     }
 
-    private fun initEncoder(input: GifWorkerInput.EncoderInit, transferables: Transferables) {
+    private fun setMessagePort(transferables: Transferables) {
+        messagePort = transferables.getMessagePort("port")
+    }
+
+    private fun initEncoder(input: GifWorkerInput.EncoderInit) {
         val buffer = Buffer()
         this.buffer = buffer
-        val port = transferables.getMessagePort("port")
-        val onFrameWritten = if (port == null) {
+        val messagePort = messagePort
+        val onFrameWritten = if (messagePort == null) {
             { _, _ -> }
         } else {
             { framesWritten: Int, writtenDuration: Duration ->
-                val event = GifFrameWrittenEvent(
-                    framesWritten,
-                    writtenDuration,
-                )
+                val event = GifFrameWrittenEvent(framesWritten, writtenDuration)
                 val json = Json.encodeToString(event)
-                port.postMessage(json)
+                messagePort.postMessage(json)
             }
         }
         encoder = WorkerGifEncoder(
