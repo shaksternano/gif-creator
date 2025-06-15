@@ -3,8 +3,9 @@ package com.shakster.gifcreator.worker
 import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
+import com.shakster.gifcreator.shared.OffscreenCanvas
 import com.shakster.gifcreator.shared.add
-import com.shakster.gifcreator.shared.asIntArray
+import com.shakster.gifcreator.shared.getContext2d
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*
@@ -14,6 +15,8 @@ import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
+import org.khronos.webgl.get
+import org.w3c.dom.ImageBitmap
 import org.w3c.dom.MessagePort
 import kotlin.time.Duration
 
@@ -47,7 +50,7 @@ private class GifWorkerStrategy(
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
             val inputTransferables = inputMessage.transferables
-            var outputTransferables: Transferables = Transferables.Empty
+            var outputTransferables = Transferables.Empty
             val output = try {
                 val input = inputMessage.input
                 when (input) {
@@ -67,6 +70,7 @@ private class GifWorkerStrategy(
 
     private fun setMessagePort(transferables: Transferables) {
         messagePort = transferables.getMessagePort("port")
+            ?: throw IllegalStateException("Message port is missing")
     }
 
     private fun initEncoder(input: GifWorkerInput.EncoderInit) {
@@ -101,14 +105,37 @@ private class GifWorkerStrategy(
     }
 
     private suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
-        val image = transferables.getInt32Array("argb")
-            ?: throw IllegalStateException("Image argb is missing")
+        val image = transferables.getImageBitmap("image")
+            ?: throw IllegalStateException("Image data is missing")
         getEncoder().writeFrame(
-            image.asIntArray(),
-            input.width,
-            input.height,
+            image.readArgb(),
+            image.width,
+            image.height,
             input.duration,
         )
+    }
+
+    private fun ImageBitmap.readArgb(): IntArray {
+        val canvas = OffscreenCanvas(width, height)
+        val context = canvas.getContext2d()
+        context.drawImage(this, 0.0, 0.0)
+        val rgba = context.getImageData(
+            0.0,
+            0.0,
+            width.toDouble(),
+            height.toDouble(),
+        ).data
+        val pixelCount = rgba.length / 4
+        val argb = IntArray(pixelCount)
+        for (i in 0 until pixelCount) {
+            val index = i * 4
+            val r = rgba[index].toUByte().toInt()
+            val g = rgba[index + 1].toUByte().toInt()
+            val b = rgba[index + 2].toUByte().toInt()
+            val a = rgba[index + 3].toUByte().toInt()
+            argb[i] = (a shl 24) or (r shl 16) or (g shl 8) or b
+        }
+        return argb
     }
 
     private suspend fun closeEncoder(): Transferables {

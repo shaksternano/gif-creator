@@ -27,8 +27,6 @@ sealed class GifWorkerInput {
 
     @Serializable
     data class Frame(
-        val width: Int,
-        val height: Int,
         val duration: Duration,
     ) : GifWorkerInput()
 
