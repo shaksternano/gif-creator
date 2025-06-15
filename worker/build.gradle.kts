@@ -7,7 +7,7 @@ plugins {
 }
 
 kotlin {
-    configAsKobwebWorker()
+    configAsKobwebWorker("gif-worker")
 
     sourceSets {
         jsMain.dependencies {
