@@ -20,4 +20,11 @@ sealed class GifProcessorOutput : WorkerOutput {
     data class Encode(
         val durationCentiseconds: Int,
     ) : GifProcessorOutput()
+
+    @Serializable
+    data class Error(
+        override val message: String,
+    ) : GifProcessorOutput() {
+        override val isError: Boolean = true
+    }
 }

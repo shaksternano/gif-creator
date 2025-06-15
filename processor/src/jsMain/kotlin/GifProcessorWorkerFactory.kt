@@ -1,5 +1,6 @@
 package com.shakster.gifcreator.processor
 
+import com.shakster.gifcreator.shared.WorkerResult
 import com.shakster.gifcreator.shared.add
 import com.shakster.gifcreator.shared.getByteArray
 import com.shakster.gifcreator.shared.getIntArray
@@ -29,14 +30,25 @@ private class GifProcessorWorkerStrategy(
 ) : WorkerStrategy<GifProcessorInput>() {
 
     override fun onInput(inputMessage: InputMessage<GifProcessorInput>) {
-        val input = inputMessage.input
-        when (input) {
-            is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.transferables)
-            is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.transferables)
+        val (output, transferables) = try {
+            val input = inputMessage.input
+            when (input) {
+                is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.transferables)
+                is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.transferables)
+            }
+        } catch (t: Throwable) {
+            WorkerResult(
+                GifProcessorOutput.Error(t.message ?: "An error occurred during processing"),
+                Transferables.Empty,
+            )
         }
+        postOutput(output, transferables)
     }
 
-    private fun quantizeImage(input: GifProcessorInput.Quantize, transferables: Transferables) {
+    private fun quantizeImage(
+        input: GifProcessorInput.Quantize,
+        transferables: Transferables,
+    ): WorkerResult<GifProcessorOutput> {
         val optimizedArgb = transferables.getIntArray("optimizedImage") ?: error("Missing optimized image data")
         val originalArgb = transferables.getIntArray("originalImage") ?: optimizedArgb
         val image = Image(
@@ -50,7 +62,7 @@ private class GifProcessorWorkerStrategy(
             input.colorQuantizerSettings.createQuantizer(),
             input.optimizeQuantizedTransparency,
         )
-        postOutput(
+        return WorkerResult(
             GifProcessorOutput.Quantize(
                 output.info,
                 input.originalImage,
@@ -62,11 +74,14 @@ private class GifProcessorWorkerStrategy(
                 add("imageColorIndices", output.imageColorIndices)
                 add("colorTable", output.colorTable)
                 add("originalImage", originalArgb)
-            }
+            },
         )
     }
 
-    private fun encodeGifImage(input: GifProcessorInput.Encode, transferables: Transferables) {
+    private fun encodeGifImage(
+        input: GifProcessorInput.Encode,
+        transferables: Transferables,
+    ): WorkerResult<GifProcessorOutput> {
         val imageColorIndices = transferables.getByteArray("imageColorIndices")
             ?: error("Missing image color indices data")
         val colorTable = transferables.getByteArray("colorTable")
@@ -77,11 +92,11 @@ private class GifProcessorWorkerStrategy(
             input.durationCentiseconds,
             input.disposalMethod,
         )
-        postOutput(
+        return WorkerResult(
             GifProcessorOutput.Encode(input.durationCentiseconds),
             Transferables {
                 add("bytes", buffer.readByteArray())
-            }
+            },
         )
     }
 }
