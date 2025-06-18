@@ -9,7 +9,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlin.coroutines.*
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class WorkerPool<I, O : WorkerOutput>(
     size: Int,
@@ -41,7 +45,7 @@ class WorkerPool<I, O : WorkerOutput>(
     suspend fun submit(
         input: I,
         attachments: Attachments = Attachments.Empty,
-    ): WorkerMessage<O> = suspendCoroutine { continuation ->
+    ): WorkerMessage<O> = suspendCancellableCoroutine { continuation ->
         coroutineScope.launch {
             inputs.send(Input(input, attachments, continuation))
         }

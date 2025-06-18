@@ -2,9 +2,9 @@ package com.shakster.gifcreator.shared
 
 import com.varabyte.kobweb.worker.Attachments
 import com.varabyte.kobweb.worker.Worker
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 data class WorkerMessage<out T>(
     val content: T,
@@ -14,7 +14,7 @@ data class WorkerMessage<out T>(
 suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
     input: I,
     attachments: Attachments = Attachments.Empty,
-): WorkerMessage<O> = suspendCoroutine { continuation ->
+): WorkerMessage<O> = suspendCancellableCoroutine { continuation ->
     onOutput = { output ->
         if (output.isError) {
             var exceptionMessage = "Worker returned an error."
