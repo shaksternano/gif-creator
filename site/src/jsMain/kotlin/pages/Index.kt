@@ -30,10 +30,7 @@ import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.style.toModifier
 import com.varabyte.kobweb.worker.Attachments
 import kotlinx.browser.window
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.await
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
@@ -46,6 +43,7 @@ import org.w3c.files.BlobPropertyBag
 import org.w3c.files.File
 import kotlin.math.max
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @Page
 @Composable
@@ -218,8 +216,13 @@ private fun createWorker(): GifWorker {
         onDispose {
             @OptIn(DelicateCoroutinesApi::class)
             GlobalScope.launch {
-                worker.submit(GifWorkerInput.Shutdown)
-                worker.terminate()
+                try {
+                    withTimeout(10.seconds) {
+                        worker.submit(GifWorkerInput.Shutdown)
+                    }
+                } finally {
+                    worker.terminate()
+                }
             }
         }
     }
