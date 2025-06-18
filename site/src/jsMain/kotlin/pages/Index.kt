@@ -29,7 +29,6 @@ import com.varabyte.kobweb.silk.components.forms.Input
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.style.toModifier
 import com.varabyte.kobweb.worker.Transferables
-import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -74,8 +73,6 @@ fun HomePage() {
     var resultUrl by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        document.title = "GIF Creator"
-
         coroutineScope.launch {
             worker.submit(GifWorkerInput.MessagePort, Transferables {
                 add("port", messageChannel.port2)
