@@ -1,6 +1,6 @@
 package com.shakster.gifcreator.shared
 
-import com.varabyte.kobweb.worker.Transferables
+import com.varabyte.kobweb.worker.Attachments
 import org.khronos.webgl.Int32Array
 import org.khronos.webgl.Int8Array
 
@@ -20,18 +20,18 @@ fun Int8Array.asByteArray(): ByteArray {
     return unsafeCast<ByteArray>()
 }
 
-fun Transferables.Builder.add(name: String, value: IntArray) {
+fun Attachments.Builder.add(name: String, value: IntArray) {
     add(name, value.asInt32Array())
 }
 
-fun Transferables.Builder.add(name: String, value: ByteArray) {
+fun Attachments.Builder.add(name: String, value: ByteArray) {
     add(name, value.asInt8Array())
 }
 
-fun Transferables.getIntArray(name: String): IntArray? {
+fun Attachments.getIntArray(name: String): IntArray? {
     return getInt32Array(name)?.asIntArray()
 }
 
-fun Transferables.getByteArray(name: String): ByteArray? {
+fun Attachments.getByteArray(name: String): ByteArray? {
     return getInt8Array(name)?.asByteArray()
 }

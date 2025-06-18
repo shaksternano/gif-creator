@@ -30,27 +30,27 @@ private class GifProcessorWorkerStrategy(
 ) : WorkerStrategy<GifProcessorInput>() {
 
     override fun onInput(inputMessage: InputMessage<GifProcessorInput>) {
-        val (output, transferables) = try {
+        val (output, attachments) = try {
             val input = inputMessage.input
             when (input) {
-                is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.transferables)
-                is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.transferables)
+                is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.attachments)
+                is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.attachments)
             }
         } catch (t: Throwable) {
             WorkerMessage(
                 GifProcessorOutput.Error(t.message ?: "An error occurred during processing"),
-                Transferables.Empty,
+                Attachments.Empty,
             )
         }
-        postOutput(output, transferables)
+        postOutput(output, attachments)
     }
 
     private fun quantizeImage(
         input: GifProcessorInput.Quantize,
-        transferables: Transferables,
+        attachments: Attachments,
     ): WorkerMessage<GifProcessorOutput> {
-        val optimizedArgb = transferables.getIntArray("optimizedImage") ?: error("Missing optimized image data")
-        val originalArgb = transferables.getIntArray("originalImage") ?: optimizedArgb
+        val optimizedArgb = attachments.getIntArray("optimizedImage") ?: error("Missing optimized image data")
+        val originalArgb = attachments.getIntArray("originalImage") ?: optimizedArgb
         val image = Image(
             optimizedArgb,
             input.optimizedImage.width,
@@ -70,7 +70,7 @@ private class GifProcessorWorkerStrategy(
                 input.disposalMethod,
                 input.optimizedPreviousFrame,
             ),
-            Transferables {
+            Attachments {
                 add("imageColorIndices", output.imageColorIndices)
                 add("colorTable", output.colorTable)
                 add("originalImage", originalArgb)
@@ -80,11 +80,11 @@ private class GifProcessorWorkerStrategy(
 
     private fun encodeGifImage(
         input: GifProcessorInput.Encode,
-        transferables: Transferables,
+        attachments: Attachments,
     ): WorkerMessage<GifProcessorOutput> {
-        val imageColorIndices = transferables.getByteArray("imageColorIndices")
+        val imageColorIndices = attachments.getByteArray("imageColorIndices")
             ?: error("Missing image color indices data")
-        val colorTable = transferables.getByteArray("colorTable")
+        val colorTable = attachments.getByteArray("colorTable")
             ?: error("Missing color table data")
         val buffer = Buffer()
         buffer.writeGifImage(
@@ -94,7 +94,7 @@ private class GifProcessorWorkerStrategy(
         )
         return WorkerMessage(
             GifProcessorOutput.Encode(input.durationCentiseconds),
-            Transferables {
+            Attachments {
                 add("bytes", buffer.readByteArray())
             },
         )

@@ -7,7 +7,7 @@ import com.shakster.gifcreator.processor.info
 import com.shakster.gifcreator.shared.*
 import com.shakster.gifkt.SuspendClosable
 import com.shakster.gifkt.internal.*
-import com.varabyte.kobweb.worker.Transferables
+import com.varabyte.kobweb.worker.Attachments
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -139,7 +139,7 @@ class WorkerGifEncoder(
                     disposalMethod,
                     optimizedPreviousFrame,
                 ),
-                Transferables {
+                Attachments {
                     add("optimizedImage", optimizedImage.argb)
                     if (optimizedImage.argb !== originalImage.argb) {
                         add("originalImage", originalImage.argb)
@@ -158,15 +158,15 @@ class WorkerGifEncoder(
             return
         }
 
-        val (output, transferables) = result.getOrThrow()
+        val (output, attachments) = result.getOrThrow()
         if (output !is GifProcessorOutput.Quantize) {
             throw createWrongOutputTypeException(output)
         }
-        val imageColorIndices = transferables.getByteArray("imageColorIndices")
+        val imageColorIndices = attachments.getByteArray("imageColorIndices")
             ?: throw IllegalStateException("Image color indices are missing")
-        val colorTable = transferables.getByteArray("colorTable")
+        val colorTable = attachments.getByteArray("colorTable")
             ?: throw IllegalStateException("Color table is missing")
-        val originalImage = transferables.getIntArray("originalImage")
+        val originalImage = attachments.getIntArray("originalImage")
             ?: throw IllegalStateException("Original image data is missing")
         writeOrOptimizeGifImage(
             output.quantizedImageInfo.toData(imageColorIndices, colorTable),
@@ -208,7 +208,7 @@ class WorkerGifEncoder(
                     durationCentiseconds,
                     disposalMethod,
                 ),
-                Transferables {
+                Attachments {
                     add("imageColorIndices", imageData.imageColorIndices)
                     add("colorTable", imageData.colorTable)
                 },
@@ -225,11 +225,11 @@ class WorkerGifEncoder(
             return
         }
 
-        val (output, transferables) = result.getOrThrow()
+        val (output, attachments) = result.getOrThrow()
         if (output !is GifProcessorOutput.Encode) {
             throw createWrongOutputTypeException(output)
         }
-        val bytes = transferables.getByteArray("bytes")
+        val bytes = attachments.getByteArray("bytes")
             ?: throw IllegalStateException("Byte data is missing")
         sink.write(bytes)
         try {
@@ -244,7 +244,7 @@ class WorkerGifEncoder(
     private suspend fun submitToWorkerPool(
         message: WorkerMessage<GifProcessorInput>,
     ): WorkerMessage<GifProcessorOutput> {
-        return workerPool.submit(message.content, message.transferables)
+        return workerPool.submit(message.content, message.attachments)
     }
 
     private fun createException(cause: Throwable): IOException {

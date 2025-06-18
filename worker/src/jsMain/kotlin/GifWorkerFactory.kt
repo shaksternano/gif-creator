@@ -49,27 +49,27 @@ private class GifWorkerStrategy(
     override fun onInput(inputMessage: InputMessage<GifWorkerInput>) {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
-            val inputTransferables = inputMessage.transferables
-            var outputTransferables = Transferables.Empty
+            val inputAttachments = inputMessage.attachments
+            var outputAttachments = Attachments.Empty
             val output = try {
                 val input = inputMessage.input
                 when (input) {
-                    is GifWorkerInput.MessagePort -> setMessagePort(inputTransferables)
+                    is GifWorkerInput.MessagePort -> setMessagePort(inputAttachments)
                     is GifWorkerInput.EncoderInit -> initEncoder(input)
-                    is GifWorkerInput.Frame -> writeFrame(input, inputTransferables)
-                    is GifWorkerInput.EncoderClose -> outputTransferables = closeEncoder()
+                    is GifWorkerInput.Frame -> writeFrame(input, inputAttachments)
+                    is GifWorkerInput.EncoderClose -> outputAttachments = closeEncoder()
                     is GifWorkerInput.Shutdown -> shutdown()
                 }
                 GifWorkerOutput.Ok
             } catch (t: Throwable) {
                 GifWorkerOutput.Error(t.message ?: "An error occurred during processing")
             }
-            postOutput(output, outputTransferables)
+            postOutput(output, outputAttachments)
         }
     }
 
-    private fun setMessagePort(transferables: Transferables) {
-        messagePort = transferables.getMessagePort("port")
+    private fun setMessagePort(attachments: Attachments) {
+        messagePort = attachments.getMessagePort("port")
             ?: throw IllegalStateException("Message port is missing")
     }
 
@@ -104,8 +104,8 @@ private class GifWorkerStrategy(
         )
     }
 
-    private suspend fun writeFrame(input: GifWorkerInput.Frame, transferables: Transferables) {
-        val image = transferables.getImageBitmap("image")
+    private suspend fun writeFrame(input: GifWorkerInput.Frame, attachments: Attachments) {
+        val image = attachments.getImageBitmap("image")
             ?: throw IllegalStateException("Image data is missing")
         getEncoder().writeFrame(
             image.readArgb(),
@@ -138,13 +138,13 @@ private class GifWorkerStrategy(
         return argb
     }
 
-    private suspend fun closeEncoder(): Transferables {
+    private suspend fun closeEncoder(): Attachments {
         getEncoder().close()
         val buffer = this.buffer ?: throw IllegalStateException("Buffer not initialized")
         this.buffer = null
         this.encoder = null
         val bytes = buffer.readByteArray()
-        return Transferables {
+        return Attachments {
             add("bytes", bytes)
         }
     }

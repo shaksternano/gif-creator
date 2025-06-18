@@ -28,7 +28,7 @@ import com.varabyte.kobweb.silk.components.forms.Button
 import com.varabyte.kobweb.silk.components.forms.Input
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.style.toModifier
-import com.varabyte.kobweb.worker.Transferables
+import com.varabyte.kobweb.worker.Attachments
 import kotlinx.browser.window
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -74,7 +74,7 @@ fun HomePage() {
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            worker.submit(GifWorkerInput.MessagePort, Transferables {
+            worker.submit(GifWorkerInput.MessagePort, Attachments {
                 add("port", messageChannel.port2)
             })
         }
@@ -248,12 +248,12 @@ private suspend fun createGif(
         val image = window.createImageBitmap(file).await()
         worker.submit(
             GifWorkerInput.Frame(duration),
-            Transferables {
+            Attachments {
                 add("image", image)
             },
         )
     }
-    val (_, transferables) = worker.submit(GifWorkerInput.EncoderClose)
-    return transferables.getByteArray("bytes")
+    val (_, attachments) = worker.submit(GifWorkerInput.EncoderClose)
+    return attachments.getByteArray("bytes")
         ?: throw IllegalStateException("Bytes are missing")
 }

@@ -3,7 +3,7 @@ package com.shakster.gifcreator.worker
 import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.WorkerOutput
 import com.shakster.gifcreator.shared.submit
-import com.varabyte.kobweb.worker.Transferables
+import com.varabyte.kobweb.worker.Attachments
 import com.varabyte.kobweb.worker.Worker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -25,10 +25,10 @@ class WorkerPool<I, O : WorkerOutput>(
         workers.forEach {
             availableWorkers.send(it)
         }
-        for ((input, transferables, continuation) in inputs) {
+        for ((input, attachments, continuation) in inputs) {
             val worker = availableWorkers.receive()
             try {
-                val result = worker.submit(input, transferables)
+                val result = worker.submit(input, attachments)
                 continuation.resume(result)
             } catch (t: Throwable) {
                 continuation.resumeWithException(t)
@@ -40,10 +40,10 @@ class WorkerPool<I, O : WorkerOutput>(
 
     suspend fun submit(
         input: I,
-        transferables: Transferables = Transferables.Empty,
+        attachments: Attachments = Attachments.Empty,
     ): WorkerMessage<O> = suspendCoroutine { continuation ->
         coroutineScope.launch {
-            inputs.send(Input(input, transferables, continuation))
+            inputs.send(Input(input, attachments, continuation))
         }
     }
 
@@ -57,7 +57,7 @@ class WorkerPool<I, O : WorkerOutput>(
 
     private data class Input<I, O>(
         val data: I,
-        val transferables: Transferables,
+        val attachments: Attachments,
         val continuation: Continuation<WorkerMessage<O>>
     )
 }

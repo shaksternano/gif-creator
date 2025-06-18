@@ -1,6 +1,6 @@
 package com.shakster.gifcreator.shared
 
-import com.varabyte.kobweb.worker.Transferables
+import com.varabyte.kobweb.worker.Attachments
 import com.varabyte.kobweb.worker.Worker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -8,12 +8,12 @@ import kotlin.coroutines.suspendCoroutine
 
 data class WorkerMessage<out T>(
     val content: T,
-    val transferables: Transferables,
+    val attachments: Attachments,
 )
 
 suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
     input: I,
-    transferables: Transferables = Transferables.Empty,
+    attachments: Attachments = Attachments.Empty,
 ): WorkerMessage<O> = suspendCoroutine { continuation ->
     onOutput = { output ->
         if (output.isError) {
@@ -22,19 +22,19 @@ suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
                 exceptionMessage += "\n\nMessage: ${output.message}"
             }
             exceptionMessage += "\n\nInput: $input" +
-                "\n\nTransferables: ${JSON.stringify(transferables.toJson())}"
+                "\n\nAttachments: ${JSON.stringify(attachments.toJson())}"
             continuation.resumeWithException(Exception(exceptionMessage))
         } else {
-            continuation.resume(WorkerMessage(output, this.transferables))
+            continuation.resume(WorkerMessage(output, this.attachments))
         }
     }
     try {
-        postInput(input, transferables)
+        postInput(input, attachments)
     } catch (t: Throwable) {
         val exceptionMessage = "Failed to post message to worker." +
             "\n\nReason: $t" +
             "\n\nInput: $input" +
-            "\n\nTransferables: ${JSON.stringify(transferables.toJson())}"
+            "\n\nAttachments: ${JSON.stringify(attachments.toJson())}"
         continuation.resumeWithException(Exception(exceptionMessage, t))
     }
 }
