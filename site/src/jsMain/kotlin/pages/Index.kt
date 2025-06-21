@@ -13,8 +13,8 @@ import com.shakster.gifcreator.util.styled
 import com.shakster.gifcreator.worker.GifFrameWrittenEvent
 import com.shakster.gifcreator.worker.GifWorker
 import com.shakster.gifcreator.worker.GifWorkerInput
-import com.shakster.gifkt.internal.GIF_MINIMUM_FRAME_DURATION_CENTISECONDS
-import com.shakster.gifkt.internal.centiseconds
+import com.shakster.gifkt.GIF_MINIMUM_FRAME_DURATION_CENTISECONDS
+import com.shakster.gifkt.centiseconds
 import com.varabyte.kobweb.compose.css.Cursor
 import com.varabyte.kobweb.compose.css.Overflow
 import com.varabyte.kobweb.compose.css.Transition

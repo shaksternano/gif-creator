@@ -1,6 +1,6 @@
 package com.shakster.gifcreator.processor
 
-import com.shakster.gifkt.internal.QuantizedImageData
+import com.shakster.gifkt.QuantizedImageData
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,6 +11,7 @@ data class QuantizedImageInfo(
     val y: Int,
     val transparentColorIndex: Int,
 ) {
+
     fun toData(imageColorIndices: ByteArray, colorTable: ByteArray): QuantizedImageData {
         return QuantizedImageData(
             imageColorIndices,

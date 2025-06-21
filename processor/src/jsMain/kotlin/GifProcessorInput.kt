@@ -1,7 +1,7 @@
 package com.shakster.gifcreator.processor
 
 import com.shakster.gifcreator.shared.ColorQuantizerSettings
-import com.shakster.gifkt.internal.DisposalMethod
+import com.shakster.gifkt.DisposalMethod
 import kotlinx.serialization.Serializable
 
 @Serializable

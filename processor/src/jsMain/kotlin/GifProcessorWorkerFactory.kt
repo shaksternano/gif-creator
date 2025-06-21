@@ -4,9 +4,9 @@ import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.add
 import com.shakster.gifcreator.shared.getByteArray
 import com.shakster.gifcreator.shared.getIntArray
-import com.shakster.gifkt.internal.Image
-import com.shakster.gifkt.internal.getImageData
-import com.shakster.gifkt.internal.writeGifImage
+import com.shakster.gifkt.Image
+import com.shakster.gifkt.quantizeGifImage
+import com.shakster.gifkt.writeGifImage
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*
@@ -56,7 +56,7 @@ private class GifProcessorWorkerStrategy(
             input.optimizedImage.width,
             input.optimizedImage.height,
         )
-        val output = getImageData(
+        val output = quantizeGifImage(
             image,
             input.maxColors,
             input.colorQuantizerSettings.createQuantizer(),
