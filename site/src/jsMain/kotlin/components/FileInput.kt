@@ -7,6 +7,7 @@ import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.accept
 import org.jetbrains.compose.web.attributes.multiple
 import org.jetbrains.compose.web.dom.Input
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.asList
 import org.w3c.files.File
 
@@ -15,6 +16,7 @@ fun FileInput(
     modifier: Modifier = Modifier,
     multipleFiles: Boolean = true,
     acceptTypes: Collection<String> = emptyList(),
+    ref: ((HTMLInputElement) -> Unit)? = null,
     onFilesSelected: (List<File>) -> Unit,
 ) {
     Input(
@@ -32,6 +34,13 @@ fun FileInput(
                 val files = event.target.files ?: return@onInput
                 if (files.length == 0) return@onInput
                 onFilesSelected(files.asList())
+            }
+
+            if (ref != null) {
+                ref { element ->
+                    ref(element)
+                    onDispose {}
+                }
             }
         }
     )

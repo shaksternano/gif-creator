@@ -1,12 +1,15 @@
 package com.shakster.gifcreator.pages
 
 import androidx.compose.runtime.*
-import com.shakster.gifcreator.components.FileInput
+import com.shakster.gifcreator.components.FileDropBox
 import com.shakster.gifcreator.shared.ColorDistanceCalculatorSettings
 import com.shakster.gifcreator.shared.ColorQuantizerSettings
 import com.shakster.gifcreator.shared.getByteArray
 import com.shakster.gifcreator.shared.submit
+import com.shakster.gifcreator.util.DynamicGrid4
+import com.shakster.gifcreator.util.HighlightModifier
 import com.shakster.gifcreator.util.HoverHighlightStyle
+import com.shakster.gifcreator.util.styled
 import com.shakster.gifcreator.worker.GifFrameWrittenEvent
 import com.shakster.gifcreator.worker.GifWorker
 import com.shakster.gifcreator.worker.GifWorkerInput
@@ -15,6 +18,7 @@ import com.shakster.gifkt.internal.centiseconds
 import com.varabyte.kobweb.compose.css.Cursor
 import com.varabyte.kobweb.compose.css.Overflow
 import com.varabyte.kobweb.compose.css.Transition
+import com.varabyte.kobweb.compose.css.autoLength
 import com.varabyte.kobweb.compose.foundation.layout.Arrangement
 import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.foundation.layout.Column
@@ -22,12 +26,12 @@ import com.varabyte.kobweb.compose.foundation.layout.Row
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.modifiers.*
+import com.varabyte.kobweb.compose.ui.thenIf
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.silk.components.forms.Button
 import com.varabyte.kobweb.silk.components.forms.Input
 import com.varabyte.kobweb.silk.components.graphics.Image
-import com.varabyte.kobweb.silk.style.toModifier
 import com.varabyte.kobweb.worker.Attachments
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -35,6 +39,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
+import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.Text
 import org.w3c.dom.MessageChannel
 import org.w3c.dom.url.URL
@@ -65,8 +70,7 @@ fun HomePage() {
 
     var durationCentiseconds by remember { mutableStateOf(100) }
 
-    val inputFiles = remember { mutableStateListOf<File>() }
-    val inputUrls = remember { mutableStateListOf<String>() }
+    val inputFiles = remember { mutableStateListOf<InputFile>() }
 
     var resultUrl by remember { mutableStateOf("") }
 
@@ -81,36 +85,90 @@ fun HomePage() {
     Row(
         Modifier
             .fillMaxHeight()
-            .padding(2.cssRem)
-            .gap(1.cssRem),
+            .padding(1.cssRem),
         horizontalArrangement = Arrangement.Center,
     ) {
         Column(
             Modifier
-                .width(30.cssRem)
-                .fillMaxHeight()
+                .fillMaxSize()
                 .gap(1.cssRem),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            FileInput(
+            var highlight by remember { mutableStateOf(false) }
+
+            FileDropBox(
                 Modifier
-                    .fillMaxWidth()
-                    .height(15.cssRem)
-                    .flexShrink(0)
+                    .width(80.percent)
+                    .minWidth(300.px)
+                    .maxWidth(1200.px)
+                    .height(80.percent)
+                    .minHeight(300.px)
                     .borderRadius(10.px)
                     .padding(30.px)
                     .backgroundColor(Color.gray)
-                    .alignContent(AlignContent.Center)
                     .outline(width = 3.px, style = LineStyle.Dashed, color = Color.black)
                     .outlineOffset((-10).px)
-                    .cursor(Cursor.Pointer)
+                    .display(DisplayStyle.Flex)
+                    .overflow(Overflow.Auto)
                     .transition(Transition.of("ease", 0.1.s))
-                    .then(HoverHighlightStyle.toModifier()),
-                acceptTypes = listOf("image/*"),
-            ) { files ->
-                inputFiles.addAll(files)
-                files.forEach { file ->
-                    inputUrls += URL.createObjectURL(file)
+                    .thenIf(
+                        inputFiles.isEmpty(),
+                        Modifier
+                            .cursor(Cursor.Pointer)
+                            .styled(HoverHighlightStyle),
+                    )
+                    .thenIf(
+                        highlight && inputFiles.isEmpty(),
+                        HighlightModifier,
+                    ),
+                clickable = inputFiles.isEmpty(),
+                onDrag = { isEnter ->
+                    highlight = isEnter
+                },
+                onFilesSelected = { files ->
+                    files.forEach { file ->
+                        inputFiles += InputFile(file, URL.createObjectURL(file))
+                    }
+                },
+            ) {
+                if (inputFiles.isEmpty()) {
+                    H1(
+                        Modifier
+                            .margin(autoLength)
+                            .fontSize(2.cssRem)
+                            .toAttrs(),
+                    ) {
+                        Text("Drop images here")
+                    }
+                } else {
+                    Div(
+                        Modifier
+                            .margin(autoLength)
+                            .gap(1.cssRem)
+                            .styled(DynamicGrid4)
+                            .toAttrs(),
+                    ) {
+                        inputFiles.forEachIndexed { index, file ->
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .backgroundColor(Color.lightgray)
+                                    .borderRadius(10.px)
+                                    .padding(10.px)
+                                    .onClick {
+                                        val removed = inputFiles.removeAt(index)
+                                        URL.revokeObjectURL(removed.url)
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    file.url,
+                                    Modifier.maxSize(100.percent),
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -118,6 +176,7 @@ fun HomePage() {
                 Modifier
                     .fillMaxWidth()
                     .gap(10.px),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Button(
@@ -126,7 +185,7 @@ fun HomePage() {
                         encodedFrames = 0
                         coroutineScope.launch {
                             val bytes = createGif(
-                                inputFiles,
+                                inputFiles.map(InputFile::file),
                                 durationCentiseconds.centiseconds,
                                 worker,
                             )
@@ -149,59 +208,21 @@ fun HomePage() {
                         if (value == null) {
                             return@Input
                         }
-                        durationCentiseconds = max(value.toInt(), GIF_MINIMUM_FRAME_DURATION_CENTISECONDS)
+                        durationCentiseconds = max(
+                            value.toInt(),
+                            GIF_MINIMUM_FRAME_DURATION_CENTISECONDS,
+                        )
                     },
                 )
 
                 Text("Frames encoded: $encodedFrames")
             }
 
-            Image(
-                resultUrl,
-                Modifier.maxSize(100.percent),
-            )
-        }
-
-        Div(
-            Modifier
-                .width(30.cssRem)
-                .fillMaxHeight()
-                .borderRadius(10.px)
-                .padding(20.px)
-                .backgroundColor(Color.gray)
-                .overflow(Overflow.Auto)
-                .toAttrs(),
-        ) {
-            Div(
-                Modifier
-                    .display(DisplayStyle.Grid)
-                    .gridTemplateColumns {
-                        repeat(3) {
-                            size(1.fr)
-                        }
-                    }
-                    .gap(1.cssRem)
-                    .toAttrs(),
-            ) {
-                inputUrls.forEachIndexed { index, url ->
-                    Box(
-                        Modifier
-                            .height(10.cssRem)
-                            .backgroundColor(Color.lightgray)
-                            .borderRadius(10.px)
-                            .padding(10.px)
-                            .onClick {
-                                inputFiles.removeAt(index)
-                                inputUrls.removeAt(index)
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            url,
-                            Modifier.maxSize(100.percent),
-                        )
-                    }
-                }
+            if (resultUrl.isNotEmpty()) {
+                Image(
+                    resultUrl,
+                    Modifier.maxHeight(500.px),
+                )
             }
         }
     }
@@ -228,6 +249,11 @@ private fun createWorker(): GifWorker {
     }
     return worker
 }
+
+private data class InputFile(
+    val file: File,
+    val url: String,
+)
 
 private suspend fun createGif(
     files: List<File>,
