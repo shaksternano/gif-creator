@@ -17,7 +17,7 @@ import kotlin.coroutines.resumeWithException
 
 class WorkerPool<I, O : WorkerOutput>(
     size: Int,
-    private val coroutineScope: CoroutineScope = CoroutineScope(EmptyCoroutineContext),
+    coroutineScope: CoroutineScope = CoroutineScope(EmptyCoroutineContext),
     createWorker: () -> Worker<I, O>,
 ) {
 
@@ -31,13 +31,15 @@ class WorkerPool<I, O : WorkerOutput>(
         }
         for ((input, attachments, continuation) in inputs) {
             val worker = availableWorkers.receive()
-            try {
-                val result = worker.submit(input, attachments)
-                continuation.resume(result)
-            } catch (t: Throwable) {
-                continuation.resumeWithException(t)
-            } finally {
-                availableWorkers.send(worker)
+            launch {
+                try {
+                    val result = worker.submit(input, attachments)
+                    continuation.resume(result)
+                } catch (t: Throwable) {
+                    continuation.resumeWithException(t)
+                } finally {
+                    availableWorkers.send(worker)
+                }
             }
         }
     }
@@ -46,16 +48,14 @@ class WorkerPool<I, O : WorkerOutput>(
         input: I,
         attachments: Attachments = Attachments.Empty,
     ): WorkerMessage<O> = suspendCancellableCoroutine { continuation ->
-        coroutineScope.launch {
-            try {
-                inputs.send(Input(input, attachments, continuation))
-            } catch (t: Throwable) {
-                val exceptionMessage = "Failed to send input to worker pool." +
-                    "\n\nReason: $t" +
-                    "\n\nInput: $input" +
-                    "\n\nAttachments: ${JSON.stringify(attachments.toJson())}"
-                continuation.resumeWithException(Exception(exceptionMessage, t))
-            }
+        try {
+            inputs.trySend(Input(input, attachments, continuation))
+        } catch (t: Throwable) {
+            val exceptionMessage = "Failed to send input to worker pool." +
+                "\n\nReason: $t" +
+                "\n\nInput: $input" +
+                "\n\nAttachments: ${JSON.stringify(attachments.toJson())}"
+            continuation.resumeWithException(Exception(exceptionMessage, t))
         }
     }
 
