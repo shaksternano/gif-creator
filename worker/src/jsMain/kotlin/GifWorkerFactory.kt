@@ -125,27 +125,27 @@ private class GifWorkerStrategy(
             width.toDouble(),
             height.toDouble(),
         ).data
-        val pixelCount = rgba.length / 4
-        val argb = IntArray(pixelCount)
-        for (i in 0 until pixelCount) {
+        return IntArray(rgba.length / 4) { i ->
             val index = i * 4
             val r = rgba[index].toUByte().toInt()
             val g = rgba[index + 1].toUByte().toInt()
             val b = rgba[index + 2].toUByte().toInt()
             val a = rgba[index + 3].toUByte().toInt()
-            argb[i] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            (a shl 24) or (r shl 16) or (g shl 8) or b
         }
-        return argb
     }
 
     private suspend fun closeEncoder(): Attachments {
-        getEncoder().close()
-        val buffer = this.buffer ?: throw IllegalStateException("Buffer not initialized")
-        this.buffer = null
-        this.encoder = null
-        val bytes = buffer.readByteArray()
-        return Attachments {
-            add("bytes", bytes)
+        try {
+            getEncoder().close()
+            val buffer = this.buffer ?: throw IllegalStateException("Buffer not initialized")
+            val bytes = buffer.readByteArray()
+            return Attachments {
+                add("bytes", bytes)
+            }
+        } finally {
+            this.buffer = null
+            this.encoder = null
         }
     }
 
