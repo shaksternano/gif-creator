@@ -4,6 +4,7 @@ import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
 import com.shakster.gifcreator.shared.OffscreenCanvas
+import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.add
 import com.shakster.gifcreator.shared.getContext2d
 import com.varabyte.kobweb.serialization.IOSerializer
@@ -49,31 +50,33 @@ private class GifWorkerStrategy(
     override fun onInput(inputMessage: InputMessage<GifWorkerInput>) {
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
-            val inputAttachments = inputMessage.attachments
-            var outputAttachments = Attachments.Empty
-            val output = try {
+            val (output, outputAttachments) = try {
                 val input = inputMessage.input
+                val inputAttachments = inputMessage.attachments
                 when (input) {
                     is GifWorkerInput.MessagePort -> setMessagePort(inputAttachments)
                     is GifWorkerInput.EncoderInit -> initEncoder(input)
                     is GifWorkerInput.Frame -> writeFrame(input, inputAttachments)
-                    is GifWorkerInput.EncoderClose -> outputAttachments = closeEncoder()
+                    is GifWorkerInput.EncoderClose -> closeEncoder()
                     is GifWorkerInput.Shutdown -> shutdown()
                 }
-                GifWorkerOutput.Ok
             } catch (t: Throwable) {
-                GifWorkerOutput.Error(t.message ?: "An error occurred during processing")
+                WorkerMessage(
+                    GifWorkerOutput.Error(t.message ?: "An error occurred during processing"),
+                    Attachments.Empty,
+                )
             }
             postOutput(output, outputAttachments)
         }
     }
 
-    private fun setMessagePort(attachments: Attachments) {
+    private fun setMessagePort(attachments: Attachments): WorkerMessage<GifWorkerOutput> {
         messagePort = attachments.getMessagePort("port")
             ?: throw IllegalStateException("Message port is missing")
+        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
     }
 
-    private fun initEncoder(input: GifWorkerInput.EncoderInit) {
+    private fun initEncoder(input: GifWorkerInput.EncoderInit): WorkerMessage<GifWorkerOutput> {
         val buffer = Buffer()
         this.buffer = buffer
         val messagePort = messagePort
@@ -102,9 +105,13 @@ private class GifWorkerStrategy(
             workerPool,
             onFrameWritten,
         )
+        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
     }
 
-    private suspend fun writeFrame(input: GifWorkerInput.Frame, attachments: Attachments) {
+    private suspend fun writeFrame(
+        input: GifWorkerInput.Frame,
+        attachments: Attachments
+    ): WorkerMessage<GifWorkerOutput> {
         val image = attachments.getImageBitmap("image")
             ?: throw IllegalStateException("Image data is missing")
         getEncoder().writeFrame(
@@ -113,6 +120,7 @@ private class GifWorkerStrategy(
             image.height,
             input.duration,
         )
+        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
     }
 
     private fun ImageBitmap.readArgb(): IntArray {
@@ -135,22 +143,26 @@ private class GifWorkerStrategy(
         }
     }
 
-    private suspend fun closeEncoder(): Attachments {
-        try {
+    private suspend fun closeEncoder(): WorkerMessage<GifWorkerOutput> {
+        return try {
             getEncoder().close()
             val buffer = this.buffer ?: throw IllegalStateException("Buffer not initialized")
             val bytes = buffer.readByteArray()
-            return Attachments {
-                add("bytes", bytes)
-            }
+            WorkerMessage(
+                GifWorkerOutput.Ok,
+                Attachments {
+                    add("bytes", bytes)
+                },
+            )
         } finally {
             this.buffer = null
             this.encoder = null
         }
     }
 
-    private suspend fun shutdown() {
+    private suspend fun shutdown(): WorkerMessage<GifWorkerOutput> {
         workerPool.shutdown()
+        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
     }
 
     private fun getEncoder(): WorkerGifEncoder {

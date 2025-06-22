@@ -30,11 +30,12 @@ private class GifProcessorWorkerStrategy(
 ) : WorkerStrategy<GifProcessorInput>() {
 
     override fun onInput(inputMessage: InputMessage<GifProcessorInput>) {
-        val (output, attachments) = try {
+        val (output, outputAttachments) = try {
             val input = inputMessage.input
+            val inputAttachments = inputMessage.attachments
             when (input) {
-                is GifProcessorInput.Quantize -> quantizeImage(input, inputMessage.attachments)
-                is GifProcessorInput.Encode -> encodeGifImage(input, inputMessage.attachments)
+                is GifProcessorInput.Quantize -> quantizeImage(input, inputAttachments)
+                is GifProcessorInput.Encode -> encodeGifImage(input, inputAttachments)
             }
         } catch (t: Throwable) {
             WorkerMessage(
@@ -42,7 +43,7 @@ private class GifProcessorWorkerStrategy(
                 Attachments.Empty,
             )
         }
-        postOutput(output, attachments)
+        postOutput(output, outputAttachments)
     }
 
     private fun quantizeImage(
