@@ -48,14 +48,16 @@ class WorkerPool<I, O : WorkerOutput>(
         input: I,
         attachments: Attachments = Attachments.Empty,
     ): WorkerMessage<O> = suspendCancellableCoroutine { continuation ->
-        try {
-            inputs.trySend(Input(input, attachments, continuation))
-        } catch (t: Throwable) {
-            val exceptionMessage = "Failed to send input to worker pool." +
-                "\n\nReason: $t" +
-                "\n\nInput: $input" +
+        val result = inputs.trySend(Input(input, attachments, continuation))
+        if (result.isFailure) {
+            var exceptionMessage = "Failed to send input to worker pool."
+            val exception = result.exceptionOrNull()
+            if (exception != null) {
+                exceptionMessage += "\n\nReason: $exception"
+            }
+            exceptionMessage += "\n\nInput: $input" +
                 "\n\nAttachments: ${JSON.stringify(attachments.toJson())}"
-            continuation.resumeWithException(Exception(exceptionMessage, t))
+            continuation.resumeWithException(Exception(exceptionMessage, exception))
         }
     }
 
