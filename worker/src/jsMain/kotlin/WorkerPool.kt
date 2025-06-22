@@ -72,6 +72,6 @@ class WorkerPool<I, O : WorkerOutput>(
     private data class Input<I, O>(
         val data: I,
         val attachments: Attachments,
-        val continuation: Continuation<WorkerMessage<O>>
+        val continuation: Continuation<WorkerMessage<O>>,
     )
 }
