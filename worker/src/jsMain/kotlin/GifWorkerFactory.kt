@@ -3,21 +3,22 @@ package com.shakster.gifcreator.worker
 import com.shakster.gifcreator.processor.GifProcessorInput
 import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
-import com.shakster.gifcreator.shared.OffscreenCanvas
 import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.add
-import com.shakster.gifcreator.shared.getContext2d
+import com.shakster.gifcreator.shared.arrayBuffer
+import com.shakster.gifkt.GifDecoder
+import com.shakster.gifkt.InvalidGifException
+import com.shakster.gifkt.asRandomAccess
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
-import org.khronos.webgl.get
-import org.w3c.dom.ImageBitmap
 import org.w3c.dom.MessagePort
 import kotlin.time.Duration
 
@@ -32,6 +33,11 @@ internal class GifWorkerFactory : WorkerFactory<GifWorkerInput, GifWorkerOutput>
     }
 }
 
+private val OK_OUTPUT: WorkerMessage<GifWorkerOutput> = WorkerMessage(
+    GifWorkerOutput.Ok,
+    Attachments.Empty,
+)
+
 private class GifWorkerStrategy(
     private val postOutput: OutputDispatcher<GifWorkerOutput>,
 ) : WorkerStrategy<GifWorkerInput>() {
@@ -44,7 +50,6 @@ private class GifWorkerStrategy(
     )
 
     private var messagePort: MessagePort? = null
-    private var buffer: Buffer? = null
     private var encoder: WorkerGifEncoder? = null
 
     override fun onInput(inputMessage: InputMessage<GifWorkerInput>) {
@@ -54,9 +59,11 @@ private class GifWorkerStrategy(
                 val input = inputMessage.input
                 val inputAttachments = inputMessage.attachments
                 when (input) {
+                    is GifWorkerInput.MediaQuery -> getMediaInfo(inputAttachments)
                     is GifWorkerInput.MessagePort -> setMessagePort(inputAttachments)
                     is GifWorkerInput.EncoderInit -> initEncoder(input)
                     is GifWorkerInput.Frame -> writeFrame(input, inputAttachments)
+                    is GifWorkerInput.Frames -> writeFrames(input, inputAttachments)
                     is GifWorkerInput.EncoderClose -> closeEncoder()
                     is GifWorkerInput.Shutdown -> shutdown()
                 }
@@ -73,24 +80,42 @@ private class GifWorkerStrategy(
     private fun setMessagePort(attachments: Attachments): WorkerMessage<GifWorkerOutput> {
         messagePort = attachments.getMessagePort("port")
             ?: throw IllegalStateException("Message port is missing")
-        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
+        return OK_OUTPUT
+    }
+
+    private suspend fun getMediaInfo(attachments: Attachments): WorkerMessage<GifWorkerOutput> {
+        val file = attachments.getFile("file")
+            ?: throw IllegalStateException("Decoder input file is missing")
+        val randomAccessData = file.arrayBuffer().await().asRandomAccess()
+        val frameCount = try {
+            val decoder = GifDecoder(randomAccessData, cacheFrameInterval = 0)
+            decoder.frameCount
+        } catch (_: InvalidGifException) {
+            self.createImageBitmap(file).await()
+            1
+        }
+        return WorkerMessage(
+            GifWorkerOutput.MediaQueryResult(frameCount),
+            Attachments.Empty,
+        )
     }
 
     private fun initEncoder(input: GifWorkerInput.EncoderInit): WorkerMessage<GifWorkerOutput> {
-        val buffer = Buffer()
-        this.buffer = buffer
         val messagePort = messagePort
         val onFrameWritten = if (messagePort == null) {
             { _, _ -> }
         } else {
             { framesWritten: Int, writtenDuration: Duration ->
-                val event = GifFrameWrittenEvent(framesWritten, writtenDuration)
+                val event = GifFrameWrittenEvent(
+                    framesWritten,
+                    writtenDuration,
+                )
                 val json = Json.encodeToString(event)
                 messagePort.postMessage(json)
             }
         }
         encoder = WorkerGifEncoder(
-            buffer,
+            Buffer(),
             input.transparencyColorTolerance,
             input.quantizedTransparencyColorTolerance,
             input.loopCount,
@@ -105,49 +130,45 @@ private class GifWorkerStrategy(
             workerPool,
             onFrameWritten,
         )
-        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
+        return OK_OUTPUT
     }
 
     private suspend fun writeFrame(
         input: GifWorkerInput.Frame,
-        attachments: Attachments
+        attachments: Attachments,
     ): WorkerMessage<GifWorkerOutput> {
         val image = attachments.getImageBitmap("image")
             ?: throw IllegalStateException("Image data is missing")
-        getEncoder().writeFrame(
-            image.readArgb(),
-            image.width,
-            image.height,
-            input.duration,
-        )
-        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
+        getEncoder().writeFrame(image, input.duration)
+        return OK_OUTPUT
     }
 
-    private fun ImageBitmap.readArgb(): IntArray {
-        val canvas = OffscreenCanvas(width, height)
-        val context = canvas.getContext2d()
-        context.drawImage(this, 0.0, 0.0)
-        val rgba = context.getImageData(
-            0.0,
-            0.0,
-            width.toDouble(),
-            height.toDouble(),
-        ).data
-        return IntArray(rgba.length / 4) { i ->
-            val index = i * 4
-            val r = rgba[index].toUByte().toInt()
-            val g = rgba[index + 1].toUByte().toInt()
-            val b = rgba[index + 2].toUByte().toInt()
-            val a = rgba[index + 3].toUByte().toInt()
-            (a shl 24) or (r shl 16) or (g shl 8) or b
+    private suspend fun writeFrames(
+        input: GifWorkerInput.Frames,
+        attachments: Attachments,
+    ): WorkerMessage<GifWorkerOutput> {
+        val file = attachments.getFile("file")
+            ?: throw IllegalStateException("Decoder input file is missing")
+        val encoder = getEncoder()
+        val randomAccessData = file.arrayBuffer().await().asRandomAccess()
+        val decoder = try {
+            GifDecoder(randomAccessData, cacheFrameInterval = 0)
+        } catch (_: InvalidGifException) {
+            val image = self.createImageBitmap(file).await()
+            encoder.writeFrame(image, input.duration)
+            return OK_OUTPUT
         }
+        decoder.asSequence().forEach { frame ->
+            encoder.writeFrame(frame)
+        }
+        return OK_OUTPUT
     }
 
     private suspend fun closeEncoder(): WorkerMessage<GifWorkerOutput> {
         return try {
-            getEncoder().close()
-            val buffer = this.buffer ?: throw IllegalStateException("Buffer not initialized")
-            val bytes = buffer.readByteArray()
+            val encoder = getEncoder()
+            encoder.close()
+            val bytes = encoder.buffer.readByteArray()
             WorkerMessage(
                 GifWorkerOutput.Ok,
                 Attachments {
@@ -155,14 +176,13 @@ private class GifWorkerStrategy(
                 },
             )
         } finally {
-            this.buffer = null
             this.encoder = null
         }
     }
 
     private suspend fun shutdown(): WorkerMessage<GifWorkerOutput> {
         workerPool.shutdown()
-        return WorkerMessage(GifWorkerOutput.Ok, Attachments.Empty)
+        return OK_OUTPUT
     }
 
     private fun getEncoder(): WorkerGifEncoder {

@@ -11,12 +11,14 @@ import com.shakster.gifkt.source
 import com.varabyte.kobweb.worker.Attachments
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
-import kotlinx.io.Sink
+import kotlinx.io.Buffer
 import kotlinx.io.buffered
+import org.khronos.webgl.get
+import org.w3c.dom.ImageBitmap
 import kotlin.time.Duration
 
 class WorkerGifEncoder(
-    sink: Sink,
+    val buffer: Buffer,
     transparencyColorTolerance: Double,
     quantizedTransparencyColorTolerance: Double,
     loopCount: Int,
@@ -34,7 +36,7 @@ class WorkerGifEncoder(
         writtenDuration: Duration,
     ) -> Unit = { _, _ -> },
 ) : AsyncGifEncoder(
-    sink,
+    buffer,
     transparencyColorTolerance,
     quantizedTransparencyColorTolerance,
     loopCount,
@@ -49,6 +51,15 @@ class WorkerGifEncoder(
     @OptIn(DelicateCoroutinesApi::class)
     GlobalScope,
 ) {
+
+    suspend fun writeFrame(image: ImageBitmap, duration: Duration) {
+        writeFrame(
+            image.readArgb(),
+            image.width,
+            image.height,
+            duration,
+        )
+    }
 
     override suspend fun quantizeImage(input: QuantizeInput): QuantizeOutput {
         val workerInput = GifProcessorInput.Quantize(
@@ -116,7 +127,23 @@ class WorkerGifEncoder(
         onFrameWrittenCallback(framesWritten, writtenDuration)
     }
 
-    private fun createWrongOutputTypeException(output: GifProcessorOutput): IllegalStateException {
-        return IllegalStateException("Wrong output type received: $output")
+    private fun ImageBitmap.readArgb(): IntArray {
+        val canvas = OffscreenCanvas(width, height)
+        val context = canvas.getContext2d()
+        context.drawImage(this, 0.0, 0.0)
+        val rgba = context.getImageData(
+            0.0,
+            0.0,
+            width.toDouble(),
+            height.toDouble(),
+        ).data
+        return IntArray(rgba.length / 4) { i ->
+            val index = i * 4
+            val r = rgba[index].toUByte().toInt()
+            val g = rgba[index + 1].toUByte().toInt()
+            val b = rgba[index + 2].toUByte().toInt()
+            val a = rgba[index + 3].toUByte().toInt()
+            (a shl 24) or (r shl 16) or (g shl 8) or b
+        }
     }
 }

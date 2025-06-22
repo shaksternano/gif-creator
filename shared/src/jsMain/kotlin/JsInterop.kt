@@ -1,7 +1,10 @@
 package com.shakster.gifcreator.shared
 
+import org.khronos.webgl.ArrayBuffer
 import org.w3c.dom.*
 import org.w3c.dom.events.EventTarget
+import org.w3c.files.Blob
+import kotlin.js.Promise
 
 /**
  * Exposes the JavaScript [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) to Kotlin
@@ -33,3 +36,16 @@ abstract external class OffscreenCanvasRenderingContext2D : CanvasCompositing, C
     val canvas: OffscreenCanvas
 }
 
+fun Blob.arrayBuffer(): Promise<ArrayBuffer> {
+    return asDynamic().arrayBuffer()
+}
+
+fun Number.toFixed(digits: Int = 0): String {
+    return if (this is Long) {
+        if (digits == 0) {
+            toString()
+        } else {
+            toString() + "." + "0".repeat(digits)
+        }
+    } else asDynamic().toFixed(digits) as String
+}

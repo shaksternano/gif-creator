@@ -38,3 +38,7 @@ suspend fun <I, O : WorkerOutput> Worker<I, O>.submit(
         continuation.resumeWithException(Exception(exceptionMessage, t))
     }
 }
+
+fun createWrongOutputTypeException(output: Any): IllegalStateException {
+    return IllegalStateException("Wrong output type received: $output")
+}

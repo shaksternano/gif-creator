@@ -10,6 +10,11 @@ sealed class GifWorkerOutput : WorkerOutput {
     data object Ok : GifWorkerOutput()
 
     @Serializable
+    data class MediaQueryResult(
+        val frameCount: Int,
+    ) : GifWorkerOutput()
+
+    @Serializable
     data class Error(
         override val message: String,
     ) : GifWorkerOutput() {

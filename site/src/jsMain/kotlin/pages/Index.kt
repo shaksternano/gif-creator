@@ -2,10 +2,7 @@ package com.shakster.gifcreator.pages
 
 import androidx.compose.runtime.*
 import com.shakster.gifcreator.components.FileDropBox
-import com.shakster.gifcreator.shared.ColorDistanceCalculatorSettings
-import com.shakster.gifcreator.shared.ColorQuantizerSettings
-import com.shakster.gifcreator.shared.getByteArray
-import com.shakster.gifcreator.shared.submit
+import com.shakster.gifcreator.shared.*
 import com.shakster.gifcreator.util.DynamicGrid4
 import com.shakster.gifcreator.util.HighlightModifier
 import com.shakster.gifcreator.util.HoverHighlightStyle
@@ -13,6 +10,7 @@ import com.shakster.gifcreator.util.styled
 import com.shakster.gifcreator.worker.GifFrameWrittenEvent
 import com.shakster.gifcreator.worker.GifWorker
 import com.shakster.gifcreator.worker.GifWorkerInput
+import com.shakster.gifcreator.worker.GifWorkerOutput
 import com.shakster.gifkt.GIF_MINIMUM_FRAME_DURATION_CENTISECONDS
 import com.shakster.gifkt.centiseconds
 import com.varabyte.kobweb.compose.css.Cursor
@@ -34,7 +32,12 @@ import com.varabyte.kobweb.silk.components.forms.Input
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.worker.Attachments
 import kotlinx.browser.window
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
@@ -47,39 +50,60 @@ import org.w3c.files.Blob
 import org.w3c.files.BlobPropertyBag
 import org.w3c.files.File
 import kotlin.math.max
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Page
 @Composable
 fun HomePage() {
     val coroutineScope = rememberCoroutineScope()
 
-    val worker = createWorker()
+    val mutex = remember { Mutex() }
+    val worker = createWorker(mutex)
 
+    var encoding by remember { mutableStateOf(false) }
+
+    var startTime by remember { mutableStateOf(Clock.System.now()) }
+    var elapsedTime by remember { mutableStateOf(0.seconds) }
     var encodedFrames by remember { mutableStateOf(0) }
+    var averageFps by remember { mutableStateOf(0.0) }
+    var maxFps by remember { mutableStateOf(0.0) }
 
     val messageChannel = remember {
         val channel = MessageChannel()
         channel.port1.onmessage = { event ->
             val frameEvent = Json.decodeFromString<GifFrameWrittenEvent>(event.data as String)
             encodedFrames = frameEvent.framesWritten
+            averageFps = frameEvent.framesWritten / (elapsedTime.inWholeMilliseconds / 1000.0)
+            maxFps = max(maxFps, averageFps)
         }
         channel
     }
 
     var durationCentiseconds by remember { mutableStateOf(100) }
 
-    val inputFiles = remember { mutableStateListOf<InputFile>() }
+    val gifInputs = remember { mutableStateListOf<GifInput>() }
+    val totalFrames by remember { derivedStateOf { gifInputs.sumOf { it.frameCount } } }
 
     var resultUrl by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            worker.submit(GifWorkerInput.MessagePort, Attachments {
-                add("port", messageChannel.port2)
-            })
+            mutex.withLock {
+                worker.submit(GifWorkerInput.MessagePort, Attachments {
+                    add("port", messageChannel.port2)
+                })
+            }
         }
+
+        window.setInterval({
+            if (encoding) {
+                elapsedTime = Clock.System.now() - startTime
+            }
+        })
     }
 
     Row(
@@ -113,26 +137,48 @@ fun HomePage() {
                     .overflow(Overflow.Auto)
                     .transition(Transition.of("ease", 0.1.s))
                     .thenIf(
-                        inputFiles.isEmpty(),
+                        gifInputs.isEmpty(),
                         Modifier
                             .cursor(Cursor.Pointer)
                             .styled(HoverHighlightStyle),
                     )
                     .thenIf(
-                        highlight && inputFiles.isEmpty(),
+                        highlight && gifInputs.isEmpty(),
                         HighlightModifier,
                     ),
-                clickable = inputFiles.isEmpty(),
+                clickable = gifInputs.isEmpty(),
                 onDrag = { isEnter ->
                     highlight = isEnter
                 },
                 onFilesSelected = { files ->
-                    files.forEach { file ->
-                        inputFiles += InputFile(file, URL.createObjectURL(file))
+                    coroutineScope.launch {
+                        files.forEach { file ->
+                            try {
+                                val mediaInfo = mutex.withLock {
+                                    worker.submit(
+                                        GifWorkerInput.MediaQuery,
+                                        Attachments {
+                                            add("file", file)
+                                        },
+                                    )
+                                }.content
+                                if (mediaInfo !is GifWorkerOutput.MediaQueryResult) {
+                                    throw createWrongOutputTypeException(mediaInfo)
+                                }
+                                gifInputs += GifInput(
+                                    file,
+                                    URL.createObjectURL(file),
+                                    mediaInfo.frameCount,
+                                )
+                            } catch (t: Throwable) {
+                                console.error("Error processing file: ${file.name}", t)
+                                window.alert("Error processing file: ${file.name}")
+                            }
+                        }
                     }
                 },
             ) {
-                if (inputFiles.isEmpty()) {
+                if (gifInputs.isEmpty()) {
                     H1(
                         Modifier
                             .margin(autoLength)
@@ -149,7 +195,7 @@ fun HomePage() {
                             .styled(DynamicGrid4)
                             .toAttrs(),
                     ) {
-                        inputFiles.forEachIndexed { index, file ->
+                        gifInputs.forEachIndexed { index, file ->
                             Box(
                                 Modifier
                                     .fillMaxSize()
@@ -157,7 +203,7 @@ fun HomePage() {
                                     .borderRadius(10.px)
                                     .padding(10.px)
                                     .onClick {
-                                        val removed = inputFiles.removeAt(index)
+                                        val removed = gifInputs.removeAt(index)
                                         URL.revokeObjectURL(removed.url)
                                     },
                                 contentAlignment = Alignment.Center,
@@ -181,22 +227,29 @@ fun HomePage() {
             ) {
                 Button(
                     onClick = {
-                        if (inputFiles.isEmpty()) return@Button
+                        if (gifInputs.isEmpty()) return@Button
+                        startTime = Clock.System.now()
+                        encoding = true
                         encodedFrames = 0
                         coroutineScope.launch {
-                            val bytes = createGif(
-                                inputFiles.map(InputFile::file),
-                                durationCentiseconds.centiseconds,
-                                worker,
-                            )
+                            val bytes = mutex.withLock {
+                                createGif(
+                                    gifInputs.map(GifInput::file),
+                                    durationCentiseconds.centiseconds,
+                                    worker,
+                                )
+                            }
                             val blob = Blob(
                                 arrayOf(bytes),
                                 BlobPropertyBag("image/gif"),
                             )
                             resultUrl = URL.createObjectURL(blob)
+                            encoding = false
+                            averageFps = totalFrames / (elapsedTime.inWholeMilliseconds / 1000.0)
+                            maxFps = max(maxFps, averageFps)
                         }
                     },
-                    enabled = inputFiles.isNotEmpty(),
+                    enabled = gifInputs.isNotEmpty(),
                 ) {
                     Text("Create GIF")
                 }
@@ -215,7 +268,12 @@ fun HomePage() {
                     },
                 )
 
-                Text("Frames encoded: $encodedFrames")
+                Text(
+                    "Frames encoded: $encodedFrames/$totalFrames, " +
+                        "Average FPS: ${averageFps.format(2)}, " +
+                        "Max FPS: ${maxFps.format(2)}, " +
+                        "Elapsed time: $elapsedTime",
+                )
             }
 
             if (resultUrl.isNotEmpty()) {
@@ -228,18 +286,22 @@ fun HomePage() {
     }
 }
 
+private fun Number.format(decimals: Int): Double {
+    return toFixed(decimals).toDouble()
+}
+
+@OptIn(DelicateCoroutinesApi::class)
 @Composable
-private fun createWorker(): GifWorker {
-    val worker = remember {
-        GifWorker()
-    }
+private fun createWorker(mutex: Mutex): GifWorker {
+    val worker = remember { GifWorker() }
     DisposableEffect(worker) {
         onDispose {
-            @OptIn(DelicateCoroutinesApi::class)
             GlobalScope.launch {
                 try {
                     withTimeout(10.seconds) {
-                        worker.submit(GifWorkerInput.Shutdown)
+                        mutex.withLock {
+                            worker.submit(GifWorkerInput.Shutdown)
+                        }
                     }
                 } finally {
                     worker.terminate()
@@ -250,9 +312,10 @@ private fun createWorker(): GifWorker {
     return worker
 }
 
-private data class InputFile(
+private data class GifInput(
     val file: File,
     val url: String,
+    val frameCount: Int,
 )
 
 private suspend fun createGif(
@@ -274,11 +337,10 @@ private suspend fun createGif(
     )
     worker.submit(input)
     files.forEach { file ->
-        val image = window.createImageBitmap(file).await()
         worker.submit(
-            GifWorkerInput.Frame(duration),
+            GifWorkerInput.Frames(duration),
             Attachments {
-                add("image", image)
+                add("file", file)
             },
         )
     }

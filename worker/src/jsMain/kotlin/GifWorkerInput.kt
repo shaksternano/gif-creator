@@ -9,6 +9,9 @@ import kotlin.time.Duration
 sealed class GifWorkerInput {
 
     @Serializable
+    data object MediaQuery : GifWorkerInput()
+
+    @Serializable
     data object MessagePort : GifWorkerInput()
 
     @Serializable
@@ -27,6 +30,11 @@ sealed class GifWorkerInput {
 
     @Serializable
     data class Frame(
+        val duration: Duration,
+    ) : GifWorkerInput()
+
+    @Serializable
+    data class Frames(
         val duration: Duration,
     ) : GifWorkerInput()
 
