@@ -11,7 +11,7 @@ sealed class ColorQuantizerSettings {
 
     @Serializable
     data class NeuQuant(
-        val quality: Int,
+        private val quality: Int,
     ) : ColorQuantizerSettings() {
 
         override fun createQuantizer(): ColorQuantizer {
