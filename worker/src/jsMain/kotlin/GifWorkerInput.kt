@@ -21,7 +21,7 @@ sealed class GifWorkerInput {
         val loopCount: Int,
         val maxColors: Int,
         val colorQuantizerSettings: ColorQuantizerSettings,
-        val colorDistanceCalculatorSettings: ColorDistanceCalculatorSettings.CieLab,
+        val colorDistanceCalculatorSettings: ColorDistanceCalculatorSettings,
         val comment: String,
         val alphaFill: Int,
         val cropTransparent: Boolean,
