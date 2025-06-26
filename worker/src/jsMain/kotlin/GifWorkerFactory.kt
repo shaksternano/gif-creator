@@ -121,7 +121,7 @@ private class GifWorkerStrategy(
             input.loopCount,
             input.maxColors,
             input.colorQuantizerSettings,
-            input.colorDistanceCalculatorSettings,
+            input.colorSimilarityCheckerSettings,
             input.comment,
             input.alphaFill,
             input.cropTransparent,

@@ -329,7 +329,7 @@ private suspend fun createGif(
         loopCount = 0,
         maxColors = 256,
         colorQuantizerSettings = ColorQuantizerSettings.NeuQuant(10),
-        colorDistanceCalculatorSettings = ColorDistanceCalculatorSettings.Euclidean(2.99, 5.87, 1.14),
+        colorSimilarityCheckerSettings = ColorSimilarityCheckerSettings.Euclidean(2.99, 5.87, 1.14),
         comment = "",
         alphaFill = -1,
         cropTransparent = true,

@@ -1,7 +1,7 @@
 package com.shakster.gifcreator.worker
 
-import com.shakster.gifcreator.shared.ColorDistanceCalculatorSettings
 import com.shakster.gifcreator.shared.ColorQuantizerSettings
+import com.shakster.gifcreator.shared.ColorSimilarityCheckerSettings
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
@@ -21,7 +21,7 @@ sealed class GifWorkerInput {
         val loopCount: Int,
         val maxColors: Int,
         val colorQuantizerSettings: ColorQuantizerSettings,
-        val colorDistanceCalculatorSettings: ColorDistanceCalculatorSettings,
+        val colorSimilarityCheckerSettings: ColorSimilarityCheckerSettings,
         val comment: String,
         val alphaFill: Int,
         val cropTransparent: Boolean,
