@@ -20,6 +20,8 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
+            implementation(project(":worker"))
+            implementation(project(":shared"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.compose.runtime)
             implementation(libs.compose.html.core)
@@ -27,8 +29,6 @@ kotlin {
             implementation(libs.kobweb.silk)
             implementation(libs.silk.icons.fa)
             implementation(libs.gifkt)
-            implementation(project(":worker"))
-            implementation(project(":shared"))
         }
     }
 }

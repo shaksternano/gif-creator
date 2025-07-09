@@ -10,6 +10,7 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
+            implementation(libs.kotlin.wrappers.browser)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kobweb.worker)
             implementation(libs.gifkt)

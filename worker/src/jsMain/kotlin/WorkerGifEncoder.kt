@@ -13,8 +13,9 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.io.Buffer
 import kotlinx.io.buffered
-import org.khronos.webgl.get
 import org.w3c.dom.ImageBitmap
+import web.canvas.CanvasImageSource
+import web.canvas.OffscreenCanvas
 import kotlin.time.Duration
 
 class WorkerGifEncoder(
@@ -128,14 +129,14 @@ class WorkerGifEncoder(
     }
 
     private fun ImageBitmap.readArgb(): IntArray {
-        val canvas = OffscreenCanvas(width, height)
+        val canvas = OffscreenCanvas(width.toDouble(), height.toDouble())
         val context = canvas.getContext2d()
-        context.drawImage(this, 0.0, 0.0)
+        context.drawImage(unsafeCast<CanvasImageSource>(), 0.0, 0.0)
         val rgba = context.getImageData(
-            0.0,
-            0.0,
-            width.toDouble(),
-            height.toDouble(),
+            0,
+            0,
+            width,
+            height,
         ).data
         return IntArray(rgba.length / 4) { i ->
             val index = i * 4

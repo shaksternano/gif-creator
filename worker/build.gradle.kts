@@ -11,12 +11,13 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
+            implementation(project(":processor"))
+            implementation(project(":shared"))
+            implementation(libs.kotlin.wrappers.browser)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kobweb.worker)
             implementation(libs.kobwebx.serialization.kotlinx)
             implementation(libs.gifkt)
-            implementation(project(":processor"))
-            implementation(project(":shared"))
         }
     }
 }
