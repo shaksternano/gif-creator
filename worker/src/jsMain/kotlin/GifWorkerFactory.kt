@@ -5,16 +5,11 @@ import com.shakster.gifcreator.processor.GifProcessorOutput
 import com.shakster.gifcreator.processor.GifProcessorWorker
 import com.shakster.gifcreator.shared.WorkerMessage
 import com.shakster.gifcreator.shared.add
-import com.shakster.gifcreator.shared.arrayBuffer
-import com.shakster.gifkt.GifDecoder
-import com.shakster.gifkt.InvalidGifException
-import com.shakster.gifkt.asRandomAccess
 import com.varabyte.kobweb.serialization.IOSerializer
 import com.varabyte.kobweb.serialization.createIOSerializer
 import com.varabyte.kobweb.worker.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
@@ -86,16 +81,9 @@ private class GifWorkerStrategy(
     private suspend fun getMediaInfo(attachments: Attachments): WorkerMessage<GifWorkerOutput> {
         val file = attachments.getFile("file")
             ?: throw IllegalStateException("Decoder input file is missing")
-        val randomAccessData = file.arrayBuffer().await().asRandomAccess()
-        val frameCount = try {
-            val decoder = GifDecoder(randomAccessData, cacheFrameInterval = 0)
-            decoder.frameCount
-        } catch (_: InvalidGifException) {
-            self.createImageBitmap(file).await()
-            1
-        }
+        val reader = ImageReader.create(file, Duration.ZERO)
         return WorkerMessage(
-            GifWorkerOutput.MediaQueryResult(frameCount),
+            GifWorkerOutput.MediaQueryResult(reader.frameCount),
             Attachments.Empty,
         )
     }
@@ -150,15 +138,8 @@ private class GifWorkerStrategy(
         val file = attachments.getFile("file")
             ?: throw IllegalStateException("Decoder input file is missing")
         val encoder = getEncoder()
-        val randomAccessData = file.arrayBuffer().await().asRandomAccess()
-        val decoder = try {
-            GifDecoder(randomAccessData, cacheFrameInterval = 0)
-        } catch (_: InvalidGifException) {
-            val image = self.createImageBitmap(file).await()
-            encoder.writeFrame(image, input.duration)
-            return OK_OUTPUT
-        }
-        decoder.asSequence().forEach { frame ->
+        val reader = ImageReader.create(file, input.duration)
+        reader.readFrames().collect { frame ->
             encoder.writeFrame(frame)
         }
         return OK_OUTPUT

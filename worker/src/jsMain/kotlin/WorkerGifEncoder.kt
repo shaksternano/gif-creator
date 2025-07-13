@@ -14,8 +14,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.io.Buffer
 import kotlinx.io.buffered
 import org.w3c.dom.ImageBitmap
-import web.canvas.CanvasImageSource
-import web.canvas.OffscreenCanvas
 import kotlin.time.Duration
 
 class WorkerGifEncoder(
@@ -126,25 +124,5 @@ class WorkerGifEncoder(
 
     override suspend fun onFrameWritten(framesWritten: Int, writtenDuration: Duration) {
         onFrameWrittenCallback(framesWritten, writtenDuration)
-    }
-
-    private fun ImageBitmap.readArgb(): IntArray {
-        val canvas = OffscreenCanvas(width.toDouble(), height.toDouble())
-        val context = canvas.getContext2d()
-        context.drawImage(unsafeCast<CanvasImageSource>(), 0.0, 0.0)
-        val rgba = context.getImageData(
-            0,
-            0,
-            width,
-            height,
-        ).data
-        return IntArray(rgba.length / 4) { i ->
-            val index = i * 4
-            val r = rgba[index].toUByte().toInt()
-            val g = rgba[index + 1].toUByte().toInt()
-            val b = rgba[index + 2].toUByte().toInt()
-            val a = rgba[index + 3].toUByte().toInt()
-            (a shl 24) or (r shl 16) or (g shl 8) or b
-        }
     }
 }

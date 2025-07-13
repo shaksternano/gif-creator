@@ -18,6 +18,7 @@ kotlin {
             implementation(libs.kobweb.worker)
             implementation(libs.kobwebx.serialization.kotlinx)
             implementation(libs.gifkt)
+            implementation(npm("mp4box", "1.2.0"))
         }
     }
 }

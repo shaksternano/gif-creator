@@ -1,18 +1,15 @@
 package com.shakster.gifcreator.shared
 
+import kotlinx.coroutines.await
 import org.khronos.webgl.ArrayBuffer
 import org.w3c.files.Blob
-import web.canvas.ID
-import web.canvas.OffscreenCanvas
-import web.canvas.OffscreenCanvasRenderingContext2D
 import kotlin.js.Promise
 
-fun OffscreenCanvas.getContext2d(): OffscreenCanvasRenderingContext2D {
-    return getContext(OffscreenCanvasRenderingContext2D.ID)!!
-}
-
-fun Blob.arrayBuffer(): Promise<ArrayBuffer> {
-    return asDynamic().arrayBuffer()
+suspend fun Blob.arrayBuffer(): ArrayBuffer {
+    return asDynamic()
+        .arrayBuffer()
+        .unsafeCast<Promise<ArrayBuffer>>()
+        .await()
 }
 
 fun Number.toFixed(digits: Int = 0): String {

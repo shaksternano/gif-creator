@@ -41,9 +41,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H1
-import org.jetbrains.compose.web.dom.Text
+import org.jetbrains.compose.web.dom.*
 import org.w3c.dom.MessageChannel
 import org.w3c.dom.url.URL
 import org.w3c.files.Blob
@@ -171,7 +169,7 @@ fun HomePage() {
                                     mediaInfo.frameCount,
                                 )
                             } catch (t: Throwable) {
-                                console.error("Error processing file: ${file.name}", t)
+                                console.error("Error processing file: ${file.name}", t.message ?: t)
                                 window.alert("Error processing file: ${file.name}")
                             }
                         }
@@ -208,10 +206,32 @@ fun HomePage() {
                                     },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Image(
-                                    file.url,
-                                    Modifier.maxSize(100.percent),
-                                )
+                                if (file.file.name.endsWith(".mp4")) {
+                                    Video(
+                                        Modifier
+                                            .maxSize(100.percent)
+                                            .toAttrs {
+                                                attr("autoplay", "")
+                                                attr("muted", "")
+                                                attr("playsinline", "")
+                                                attr("loop", "")
+                                                ref { element ->
+                                                    element.muted = true
+                                                    onDispose {}
+                                                }
+                                            }
+                                    ) {
+                                        Source(attrs = {
+                                            attr("src", file.url)
+                                            attr("type", "video/mp4")
+                                        })
+                                    }
+                                } else {
+                                    Image(
+                                        file.url,
+                                        Modifier.maxSize(100.percent),
+                                    )
+                                }
                             }
                         }
                     }
