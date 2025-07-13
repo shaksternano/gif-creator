@@ -19,6 +19,7 @@ class GifImageReader(
     }
 
     object Factory : ImageReaderFactory {
+
         override suspend fun create(blob: Blob, frameDuration: Duration): GifImageReader {
             val decoder = GifDecoder(blob.arrayBuffer(), 0)
             return GifImageReader(decoder)

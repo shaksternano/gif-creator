@@ -34,6 +34,7 @@ class CanvasImageReader(
     }
 
     object Factory : ImageReaderFactory {
+
         override suspend fun create(blob: Blob, frameDuration: Duration): ImageReader {
             val image = self.createImageBitmap(blob).await()
             return CanvasImageReader(image, frameDuration)
