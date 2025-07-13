@@ -36,7 +36,7 @@ class Mp4ImageReader(
                     close(exception)
                 },
                 output = { frame ->
-                    val argb = frame.readArgb(frame.displayWidth, frame.displayHeight)
+                    val argb = frame.readArgb()
                     val image = ImageFrame(
                         argb = argb,
                         width = frame.displayWidth,

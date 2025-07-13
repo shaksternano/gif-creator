@@ -5,6 +5,7 @@ import org.w3c.dom.ImageBitmap
 import web.canvas.ID
 import web.canvas.OffscreenCanvas
 import web.canvas.OffscreenCanvasRenderingContext2D
+import web.codecs.VideoFrame
 
 fun CanvasImageSource.readArgb(width: Int, height: Int): IntArray {
     val canvas = OffscreenCanvas(width.toDouble(), height.toDouble())
@@ -32,4 +33,8 @@ fun web.canvas.CanvasImageSource.readArgb(width: Int, height: Int): IntArray {
 
 fun ImageBitmap.readArgb(): IntArray {
     return readArgb(width, height)
+}
+
+fun VideoFrame.readArgb(): IntArray {
+    return readArgb(displayWidth, displayHeight)
 }
