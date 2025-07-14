@@ -12,6 +12,7 @@ sealed class GifWorkerOutput : WorkerOutput {
     @Serializable
     data class MediaQueryResult(
         val frameCount: Int,
+        val isVideo: Boolean,
     ) : GifWorkerOutput()
 
     @Serializable

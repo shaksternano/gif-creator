@@ -5,7 +5,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.w3c.files.Blob
 import kotlin.js.Promise
 
-suspend fun Blob.arrayBuffer(): ArrayBuffer {
+suspend inline fun Blob.arrayBuffer(): ArrayBuffer {
     return asDynamic()
         .arrayBuffer()
         .unsafeCast<Promise<ArrayBuffer>>()

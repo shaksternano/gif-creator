@@ -2,12 +2,14 @@ package com.shakster.gifcreator.worker
 
 import com.shakster.gifkt.ImageFrame
 import kotlinx.coroutines.flow.Flow
-import org.w3c.files.Blob
+import org.w3c.files.File
 import kotlin.time.Duration
 
 interface ImageReader {
 
     val frameCount: Int
+    val isVideo: Boolean
+        get() = false
 
     fun readFrames(): Flow<ImageFrame>
 
@@ -15,14 +17,14 @@ interface ImageReader {
         private val imageReaderFactories: List<ImageReaderFactory> = listOf(
             GifImageReader.Factory,
             CanvasImageReader.Factory,
-            Mp4ImageReader.Factory,
+            VideoImageReader.Factory,
         )
 
-        suspend fun create(blob: Blob, frameDuration: Duration): ImageReader {
+        suspend fun create(file: File, frameDuration: Duration): ImageReader {
             var throwable: Throwable? = null
             for (factory in imageReaderFactories) {
                 try {
-                    return factory.create(blob, frameDuration)
+                    return factory.create(file, frameDuration)
                 } catch (t: Throwable) {
                     throwable = t
                 }
@@ -34,5 +36,5 @@ interface ImageReader {
 
 interface ImageReaderFactory {
 
-    suspend fun create(blob: Blob, frameDuration: Duration): ImageReader
+    suspend fun create(file: File, frameDuration: Duration): ImageReader
 }

@@ -5,7 +5,7 @@ import com.shakster.gifkt.GifDecoder
 import com.shakster.gifkt.ImageFrame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import org.w3c.files.Blob
+import org.w3c.files.File
 import kotlin.time.Duration
 
 class GifImageReader(
@@ -20,8 +20,8 @@ class GifImageReader(
 
     object Factory : ImageReaderFactory {
 
-        override suspend fun create(blob: Blob, frameDuration: Duration): GifImageReader {
-            val decoder = GifDecoder(blob.arrayBuffer(), 0)
+        override suspend fun create(file: File, frameDuration: Duration): GifImageReader {
+            val decoder = GifDecoder(file.arrayBuffer(), 0)
             return GifImageReader(decoder)
         }
     }

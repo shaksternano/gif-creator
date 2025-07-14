@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.w3c.dom.DedicatedWorkerGlobalScope
 import org.w3c.dom.ImageBitmap
-import org.w3c.files.Blob
+import org.w3c.files.File
 import kotlin.time.Duration
 
 private external val self: DedicatedWorkerGlobalScope
@@ -35,8 +35,8 @@ class CanvasImageReader(
 
     object Factory : ImageReaderFactory {
 
-        override suspend fun create(blob: Blob, frameDuration: Duration): ImageReader {
-            val image = self.createImageBitmap(blob).await()
+        override suspend fun create(file: File, frameDuration: Duration): ImageReader {
+            val image = self.createImageBitmap(file).await()
             return CanvasImageReader(image, frameDuration)
         }
     }

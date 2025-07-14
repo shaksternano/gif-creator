@@ -167,6 +167,7 @@ fun HomePage() {
                                     file,
                                     URL.createObjectURL(file),
                                     mediaInfo.frameCount,
+                                    mediaInfo.isVideo,
                                 )
                             } catch (t: Throwable) {
                                 console.error("Error processing file: ${file.name}", t.message ?: t)
@@ -206,7 +207,7 @@ fun HomePage() {
                                     },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (file.file.name.endsWith(".mp4")) {
+                                if (file.isVideo) {
                                     Video(
                                         Modifier
                                             .maxSize(100.percent)
@@ -216,6 +217,10 @@ fun HomePage() {
                                                 attr("playsinline", "")
                                                 attr("loop", "")
                                                 ref { element ->
+                                                    /*
+                                                     * "muted" attribute doesn't work with
+                                                     * dynamically added video elements
+                                                     */
                                                     element.muted = true
                                                     onDispose {}
                                                 }
@@ -336,6 +341,7 @@ private data class GifInput(
     val file: File,
     val url: String,
     val frameCount: Int,
+    val isVideo: Boolean,
 )
 
 private suspend fun createGif(

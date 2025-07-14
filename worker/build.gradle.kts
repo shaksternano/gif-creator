@@ -18,7 +18,7 @@ kotlin {
             implementation(libs.kobweb.worker)
             implementation(libs.kobwebx.serialization.kotlinx)
             implementation(libs.gifkt)
-            implementation(npm("mp4box", libs.versions.mp4box.get()))
+            implementation(npm("web-demuxer", libs.versions.webDemuxer.get()))
         }
     }
 }

@@ -83,7 +83,10 @@ private class GifWorkerStrategy(
             ?: throw IllegalStateException("Decoder input file is missing")
         val reader = ImageReader.create(file, Duration.ZERO)
         return WorkerMessage(
-            GifWorkerOutput.MediaQueryResult(reader.frameCount),
+            GifWorkerOutput.MediaQueryResult(
+                reader.frameCount,
+                reader.isVideo,
+            ),
             Attachments.Empty,
         )
     }
