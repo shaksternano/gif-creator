@@ -213,8 +213,8 @@ external interface WebDemuxerOptions {
  *
  * ```kotlin
  * val demuxer = WebDemuxer()
- * demuxer.load(file)
- * val encodedChunk = demuxer.seek(WebCodecsSupportedMediaType.VIDEO, 10)
+ * demuxer.load(file).await()
+ * val encodedChunk = demuxer.seek(WebCodecsSupportedMediaType.VIDEO, 10).await()
  * ```
  */
 external class WebDemuxer(
@@ -229,9 +229,16 @@ external class WebDemuxer(
     /**
      * Load a file for demuxing
      *
-     * @param source a [File] or [String] to load
+     * @param source source to load
      */
-    fun load(source: Any): Promise<Unit>
+    fun load(source: File): Promise<Unit>
+
+    /**
+     * Load a file for demuxing
+     *
+     * @param source source to load
+     */
+    fun load(source: String): Promise<Unit>
 
     /**
      * Destroy the demuxer instance
