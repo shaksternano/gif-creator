@@ -127,51 +127,71 @@ external interface WebAVStream {
 
     val index: Int
     val id: Int
+
     @JsName("codec_type")
     val codecType: AVMediaType
+
     @JsName("codec_type_string")
     val codecTypeString: String
+
     @JsName("codec_name")
     val codecName: String
+
     @JsName("codec_string")
     val codecString: String
+
     @JsName("color_primaries")
     val colorPrimaries: String
+
     @JsName("color_range")
     val colorRange: String
+
     @JsName("color_space")
     val colorSpace: String
+
     @JsName("color_transfer")
     val colorTransfer: String
     val profile: String
+
     @JsName("pix_fmt")
     val pixFmt: String
     val level: Int
     val width: Int
     val height: Int
     val channels: Int
+
     @JsName("sample_rate")
     val sampleRate: Int
+
     @JsName("sample_fmt")
     val sampleFmt: String
+
     @JsName("bit_rate")
     val bitRate: String
+
     @JsName("extradata_size")
     val extraDataSize: Int
+
     @JsName("extradata")
     val extraData: Uint8Array
+
     @JsName("r_frame_rate")
     val rFrameRate: String
+
     @JsName("avg_frame_rate")
     val avgFrameRate: String
+
     @JsName("sample_aspect_ratio")
     val sampleAspectRatio: String
+
     @JsName("display_aspect_ratio")
     val displayAspectRatio: String
+
     @JsName("start_time")
     val startTime: Int
     val duration: Int
     val rotation: Int
+
     @JsName("nb_frames")
     val nbFrames: String
     val tags: Record<String, String>
@@ -181,13 +201,17 @@ external interface WebMediaInfo {
 
     @JsName("format_name")
     val formatName: String
+
     @JsName("start_time")
     val startTime: Int
     val duration: Int
+
     @JsName("bit_rate")
     val bitRate: String
+
     @JsName("nb_streams")
     val nbStreams: Int
+
     @JsName("nb_chapters")
     val nbChapters: Int
     val flags: Int
