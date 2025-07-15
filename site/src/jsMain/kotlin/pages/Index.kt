@@ -45,6 +45,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
+import org.khronos.webgl.ArrayBuffer
 import org.w3c.dom.MessageChannel
 import org.w3c.dom.url.URL
 import org.w3c.files.Blob
@@ -418,7 +419,7 @@ private suspend fun createGif(
     files: List<File>,
     duration: Duration,
     worker: GifWorker,
-): ByteArray {
+): ArrayBuffer {
     val input = GifWorkerInput.EncoderInit(
         transparencyColorTolerance = 0.01,
         quantizedTransparencyColorTolerance = 0.02,
@@ -441,6 +442,6 @@ private suspend fun createGif(
         )
     }
     val (_, attachments) = worker.submit(GifWorkerInput.EncoderClose)
-    return attachments.getByteArray("bytes")
+    return attachments.getArrayBuffer("bytes")
         ?: throw IllegalStateException("Bytes are missing")
 }
