@@ -144,6 +144,7 @@ fun HomePage() {
                         highlight && gifInputs.isEmpty(),
                         HighlightModifier,
                     ),
+                acceptTypes = listOf("image/*", "video/*"),
                 clickable = gifInputs.isEmpty(),
                 onDrag = { isEnter ->
                     highlight = isEnter
