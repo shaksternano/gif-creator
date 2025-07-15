@@ -17,8 +17,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
 
 class VideoImageReader(
-    override val frameCount: Int,
     private val demuxer: WebDemuxer,
+    private val decoderConfig: VideoDecoderConfig,
+    override val frameCount: Int,
     private val frameDuration: Duration,
 ) : ImageReader {
 
@@ -51,8 +52,6 @@ class VideoImageReader(
             )
 
             val decoder = VideoDecoder(decoderInit)
-            val decoderConfig = demuxer.getDecoderConfig(MediaType.VIDEO).await()
-            decoderConfig.hardwareAcceleration = HardwareAcceleration.preferHardware
             decoder.configure(decoderConfig)
 
             val frames = demuxer.read(MediaType.VIDEO)
@@ -72,11 +71,17 @@ class VideoImageReader(
         override suspend fun create(file: File, frameDuration: Duration): ImageReader {
             val demuxer = WebDemuxer("https://cdn.jsdelivr.net/npm/web-demuxer@latest/dist/wasm-files/web-demuxer.wasm")
             demuxer.load(file).await()
-            val stream = demuxer.getMediaStream(MediaType.VIDEO).await()
-            val frameCount = stream.nbFrames.toInt()
+            val streamPromise = demuxer.getMediaStream(MediaType.VIDEO)
+            val decoderConfig = demuxer.getDecoderConfig(MediaType.VIDEO).await()
+            if (decoderConfig.codec == "undf") {
+                throw IllegalArgumentException("Unsupported video codec")
+            }
+            decoderConfig.hardwareAcceleration = HardwareAcceleration.preferHardware
+            val frameCount = streamPromise.await().nbFrames.toInt()
             return VideoImageReader(
-                frameCount,
                 demuxer,
+                decoderConfig,
+                frameCount,
                 frameDuration,
             )
         }
