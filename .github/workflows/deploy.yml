@@ -1,0 +1,44 @@
+name: Deploy to Cloudflare Pages
+on: [ push ]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        name: Deploy
+        permissions:
+            contents: read
+            deployments: write
+        steps:
+            -   name: Checkout sources
+                uses: actions/checkout@v4
+
+            -   name: Setup Java
+                uses: actions/setup-java@v4
+                with:
+                    distribution: "graalvm"
+                    java-version: 21
+
+            -   name: Setup Gradle
+                uses: gradle/actions/setup-gradle@v4
+
+            -   name: Query browser cache ID
+                id: browser-cache-id
+                run: echo "value=$(./gradlew -q :site:kobwebBrowserCacheId)" >> $GITHUB_OUTPUT
+
+            -   name: Cache browser dependencies
+                uses: actions/cache@v4
+                id: playwright-cache
+                with:
+                    path: ~/.cache/ms-playwright
+                    key: ${{ runner.os }}-playwright-${{ steps.browser-cache-id.outputs.value }}
+
+            -   name: Export Kobweb site
+                run: ./gradlew kobwebExport -PkobwebReuseServer=false -PkobwebEnv=DEV -PkobwebRunLayout=FULLSTACK -PkobwebBuildTarget=RELEASE -PkobwebExportLayout=STATIC
+
+            -   name: Deploy to Cloudflare
+                uses: cloudflare/wrangler-action@v3
+                with:
+                    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                    gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+                    command: pages deploy site/.kobweb/site --project-name=gif-creator
