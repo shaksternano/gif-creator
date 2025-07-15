@@ -10,7 +10,7 @@ import org.w3c.files.File
 import web.streams.ReadableStream
 import kotlin.js.Promise
 
-sealed external class AVLogLevel {
+sealed external interface AVLogLevel {
 
     companion object {
 
@@ -122,7 +122,6 @@ external interface WebAVPacket {
     val size: Int
     val data: Uint8Array
 }
-
 
 external interface WebAVStream {
 
