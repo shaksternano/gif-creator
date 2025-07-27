@@ -33,7 +33,7 @@ jobs:
                     key: ${{ runner.os }}-playwright-${{ steps.browser-cache-id.outputs.value }}
 
             -   name: Export Kobweb site
-                run: ./gradlew kobwebExport -PkobwebReuseServer=false -PkobwebEnv=DEV -PkobwebRunLayout=FULLSTACK -PkobwebBuildTarget=RELEASE -PkobwebExportLayout=STATIC
+                run: ./gradlew kobwebExport -PkobwebReuseServer=false -PkobwebEnv=DEV -PkobwebRunLayout=FULLSTACK -PkobwebBuildTarget=RELEASE -PkobwebExportLayout=STATIC --refresh-dependencies
 
             -   name: Deploy to Cloudflare
                 uses: cloudflare/wrangler-action@v3
