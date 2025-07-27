@@ -1,6 +1,5 @@
 package com.shakster.gifcreator.shared
 
-import com.shakster.gifkt.CieLabSimilarityChecker
 import com.shakster.gifkt.ColorSimilarityChecker
 import com.shakster.gifkt.EuclideanSimilarityChecker
 import kotlinx.serialization.Serializable
@@ -14,7 +13,7 @@ sealed class ColorSimilarityCheckerSettings {
     data object CieLab : ColorSimilarityCheckerSettings() {
 
         override fun createColorSimilarityChecker(): ColorSimilarityChecker {
-            return CieLabSimilarityChecker
+            return ColorSimilarityChecker.CIELAB
         }
     }
 
