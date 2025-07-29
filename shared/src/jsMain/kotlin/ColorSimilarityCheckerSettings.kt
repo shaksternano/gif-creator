@@ -1,7 +1,6 @@
 package com.shakster.gifcreator.shared
 
 import com.shakster.gifkt.ColorSimilarityChecker
-import com.shakster.gifkt.EuclideanSimilarityChecker
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -25,7 +24,7 @@ sealed class ColorSimilarityCheckerSettings {
     ) : ColorSimilarityCheckerSettings() {
 
         override fun createColorSimilarityChecker(): ColorSimilarityChecker {
-            return EuclideanSimilarityChecker(redWeight, greenWeight, blueWeight)
+            return ColorSimilarityChecker.euclidean(redWeight, greenWeight, blueWeight)
         }
     }
 }

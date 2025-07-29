@@ -1,7 +1,6 @@
 package com.shakster.gifcreator.shared
 
 import com.shakster.gifkt.ColorQuantizer
-import com.shakster.gifkt.NeuQuantizer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,7 +14,7 @@ sealed class ColorQuantizerSettings {
     ) : ColorQuantizerSettings() {
 
         override fun createQuantizer(): ColorQuantizer {
-            return NeuQuantizer(quality)
+            return ColorQuantizer.neuQuant(quality)
         }
     }
 }
