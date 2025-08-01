@@ -1,11 +1,11 @@
 [versions]
 kotlin = "2.2.0"
-kotlin-wrappers-browser = "2025.7.2"
+kotlin-wrappers-browser = "2025.8.0"
 kotlinx-serialization = "1.9.0"
 jetbrains-compose = "1.8.2"
 kobweb = "0.23.0"
-gifkt = "0.1.0"
-webDemuxer = "3.0.1"
+gifkt = "0.1.1"
+webDemuxer = "3.0.2"
 
 [libraries]
 kotlin-wrappers-browser = { module = "org.jetbrains.kotlin-wrappers:kotlin-browser", version.ref = "kotlin-wrappers-browser" }
