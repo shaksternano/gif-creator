@@ -25,6 +25,7 @@ class WorkerGifEncoder(
     private val colorQuantizerSettings: ColorQuantizerSettings,
     colorSimilarityCheckerSettings: ColorSimilarityCheckerSettings,
     comment: String,
+    private val transparentAlphaThreshold: Int,
     alphaFill: Int,
     cropTransparent: Boolean,
     minimumFrameDurationCentiseconds: Int,
@@ -43,6 +44,7 @@ class WorkerGifEncoder(
     colorQuantizerSettings.createQuantizer(),
     colorSimilarityCheckerSettings.createColorSimilarityChecker(),
     comment,
+    transparentAlphaThreshold,
     alphaFill,
     cropTransparent,
     minimumFrameDurationCentiseconds,
@@ -63,6 +65,7 @@ class WorkerGifEncoder(
     override suspend fun quantizeImage(input: QuantizeInput): QuantizeOutput {
         val workerInput = GifProcessorInput.Quantize(
             maxColors,
+            transparentAlphaThreshold,
             colorQuantizerSettings,
             optimizeQuantizedTransparency,
             input.optimizedImage.dimensions,

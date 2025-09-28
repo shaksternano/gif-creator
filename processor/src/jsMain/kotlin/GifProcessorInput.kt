@@ -10,6 +10,7 @@ sealed class GifProcessorInput {
     @Serializable
     data class Quantize(
         val maxColors: Int,
+        val transparentAlphaThreshold: Int,
         val colorQuantizerSettings: ColorQuantizerSettings,
         val optimizeQuantizedTransparency: Boolean,
         val optimizedImage: ImageDimensions,

@@ -428,6 +428,7 @@ private suspend fun createGif(
         colorQuantizerSettings = ColorQuantizerSettings.NeuQuant(10),
         colorSimilarityCheckerSettings = ColorSimilarityCheckerSettings.Euclidean(2.99, 5.87, 1.14),
         comment = "",
+        transparentAlphaThreshold = 20,
         alphaFill = -1,
         cropTransparent = true,
         minimumFrameDurationCentiseconds = GIF_MINIMUM_FRAME_DURATION_CENTISECONDS,

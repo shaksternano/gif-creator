@@ -114,6 +114,7 @@ private class GifWorkerStrategy(
             input.colorQuantizerSettings,
             input.colorSimilarityCheckerSettings,
             input.comment,
+            input.transparentAlphaThreshold,
             input.alphaFill,
             input.cropTransparent,
             input.minimumFrameDurationCentiseconds,

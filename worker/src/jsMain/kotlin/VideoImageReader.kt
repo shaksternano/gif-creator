@@ -4,7 +4,7 @@ import com.shakster.gifcreator.worker.webdemuxer.MediaType
 import com.shakster.gifcreator.worker.webdemuxer.VIDEO
 import com.shakster.gifcreator.worker.webdemuxer.WebDemuxer
 import com.shakster.gifkt.ImageFrame
-import js.iterable.iterator
+import js.iterable.asFlow
 import kotlinx.coroutines.await
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -55,7 +55,7 @@ class VideoImageReader(
             decoder.configure(decoderConfig)
 
             val frames = demuxer.read(MediaType.VIDEO)
-            for (frame in frames) {
+            frames.asFlow().collect { frame ->
                 decoder.decode(frame)
             }
 

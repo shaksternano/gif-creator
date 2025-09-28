@@ -23,6 +23,7 @@ sealed class GifWorkerInput {
         val colorQuantizerSettings: ColorQuantizerSettings,
         val colorSimilarityCheckerSettings: ColorSimilarityCheckerSettings,
         val comment: String,
+        val transparentAlphaThreshold: Int,
         val alphaFill: Int,
         val cropTransparent: Boolean,
         val minimumFrameDurationCentiseconds: Int,

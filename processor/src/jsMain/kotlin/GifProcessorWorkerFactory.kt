@@ -60,6 +60,7 @@ private class GifProcessorWorkerStrategy(
         val output = quantizeGifImage(
             image,
             input.maxColors,
+            input.transparentAlphaThreshold,
             input.colorQuantizerSettings.createQuantizer(),
             input.optimizeQuantizedTransparency,
         )
